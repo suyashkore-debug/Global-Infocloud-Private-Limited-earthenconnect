@@ -1,0 +1,293 @@
+<?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
+<?php init_head(); ?>
+<div id="wrapper">
+  <div class="content">
+    <div class="row">
+      <div class="col-md-8">
+        <div class="panel_s">
+          <div class="panel-body">
+            <div class="_buttons">
+                <div class="row">
+                    <?php
+                            $fy = $this->session->userdata('finacial_year');
+                            $fy_new  = $fy + 1;
+                            $lastdate_date = '20'.$fy_new.'-03-31';
+                            $firstdate_date = '20'.$fy_new.'-04-01';
+                            $curr_date = date('Y-m-d');
+                            $curr_date_new    = new DateTime($curr_date);
+                            $last_date_yr = new DateTime($lastdate_date);
+                            if($last_date_yr < $curr_date_new){
+                                $to_date = '31/03/20'.$fy_new;
+                                $from_date = '01/03/20'.$fy_new;
+                            }else{
+                                $from_date = "01/".date('m')."/".date('Y');
+                                $to_date = date('d/m/Y');
+                            }
+                        ?>
+                    <div class="col-md-1" >
+                        <label for="from_date" class="control-label">ItemID</label>
+                    </div>
+                    <div class="col-md-2" style="padding-left: 5px;">
+                        <div class="form-group">
+                            <input type="text" name="ItemID" id="ItemID" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <input type="text" name="ItemName" id="ItemName" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group" app-field-wrapper="GodownID">
+                                <small class="req text-danger">* </small>
+                                <label for="GodownID" class="form-label">GodownID</label> 
+                                <select name="GodownID" id="GodownID" class="selectpicker form-control" data-none-selected-text="Non Selected" data-live-search="true" <?php echo $GodownStatus;?>>
+                                    <option value="">ALL</option>
+                                <?php
+                                    foreach ($GodownData as $key => $value) {
+                                ?>
+                                        <option value="<?php echo $value['AccountID'];?>" <?php if($GodownID == $value['AccountID']){ echo 'selected';}?>><?php echo $value['AccountName'];?></option>
+                                <?php
+                                    }
+                                ?>
+                                </select>
+                            </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-1">
+                        <label for="from_date" class="control-label">FromDate</label>
+                    </div>
+                    <div class="col-md-2" style="padding-left: 5px;">
+                        <?php 
+                           echo render_date_input('from_date','',$from_date);          
+                        ?>
+                    </div>
+                    
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-1">
+                        <label for="from_date" class="control-label">ToDate</label>
+                    </div>
+                    <div class="col-md-2" style="padding-left: 5px;">
+                        <?php 
+                           echo render_date_input('to_date','',$to_date);          
+                        ?>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <div class="custom_button">
+                            <!--<button class="btn btn-info pull-left mleft5 search_data" id="search_data">Show</button>-->
+                            <a class="btn btn-info search_data" href="#" id="search_data">Show</a>
+                            <a class="btn btn-default buttons-excel buttons-html5" tabindex="0" aria-controls="table-daily_report" href="#" id="caexcel"><span>Export</span></a>
+                            <a class="btn btn-default" href="javascript:void(0);" onclick="printPage();">Print</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <div class="clearfix"></div>
+            <span id="searchh" style="display:none;">please wait fetching data...</span>
+            <span id="searchh2" style="display:none;">please wait Exporting data...</span>
+            <div class="fixTableHead SaleVsSaleRtn_report">
+              
+            </div>
+            
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<?php init_tail(); ?>
+<style>
+    .SaleVsSaleRtn_report { overflow: auto;max-height: 60vh;width:100%;position:relative;top: 0px; }
+    .SaleVsSaleRtn_report thead th { position: sticky; top: 0; z-index: 1; }
+    .SaleVsSaleRtn_report tbody th { position: sticky; left: 0; }
+    
+    /* Just common table stuff. Really. */
+    .SaleVsSaleRtn_report table  { border-collapse: collapse; width: 100%; }
+    th, td { padding: 1px 5px !important; white-space: nowrap; border:1px solid !important;font-size:11px; line-height:1.42857143!important;vertical-align: middle !important;}
+    .SaleVsSaleRtn_report th     { background: #50607b;color: #fff !important; }
+</style>
+<script type="text/javascript" language="javascript" >
+$(document).ready(function(){
+    
+
+// Initialize For Account
+    $( "#ItemID" ).autocomplete({
+        source: function( request, response ) {
+        $.ajax({
+            url: "<?php echo admin_url(); ?>sale_reports/ItemList",
+            type: 'post',
+            dataType: "json",
+            data: {
+              search: request.term
+            },
+            success: function( data ) {
+              response( data );
+            }
+          });
+        },
+        select: function (event, ui) {
+          $('#ItemID').val(ui.item.value); // display the selected text
+          $('#ItemName').val(ui.item.label); // display the selected text
+            return false;      
+        }
+      });
+    
+    $('#ItemID').on('blur',function(){
+         
+        var ItemID = $(this).val();
+        if(ItemID !==''){
+            $.ajax({
+              url:"<?php echo admin_url(); ?>sale_reports/ItemDetails",
+              dataType:"JSON",
+              method:"POST",
+              cache: false,
+              data:{ItemID:ItemID,},
+              
+              success:function(data){
+                  
+                if(empty(data)){
+                    alert("ItemID not found..."); 
+                }else{
+                    $('#ItemID').val(data.item_code); // display the selected text
+                    $('#ItemName').val(data.description); // display the selected text
+                }
+               $('#search_data').focus();
+              }
+            });
+        }
+     })
+     
+    
+    
+    
+    $('#ItemID').on('focus',function(){
+            $('#ItemID').val('');
+            $('#ItemName').val('');
+    });
+    
+ 
+    $('#search_data').on('click',function(){
+        var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    var ItemID = $("#ItemID").val();
+	    var GodownID = $("#GodownID").val();
+	    
+	    if(ItemID != ''){
+	        $.ajax({
+              url:"<?php echo admin_url(); ?>sale_reports/GetItemWiseStockReport",
+              dataType:"JSON",
+              method:"POST",
+              cache: false,
+              data:{from_date:from_date, to_date:to_date, ItemID:ItemID,GodownID:GodownID},
+              beforeSend: function () {
+                $('#searchh').css('display','block');
+                $('.SaleVsSaleRtn_report').css('display','none');
+             },
+              complete: function () {
+                $('.SaleVsSaleRtn_report').css('display','');
+                $('#searchh').css('display','none');
+             },
+              success:function(data){
+                    $('.SaleVsSaleRtn_report').html(data);
+              }
+            });
+	    }else{
+	        alert('please select Item...')
+	    }
+    });
+   
+});
+$("#caexcel").click(function(){
+        var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    var ItemID = $("#ItemID").val();
+	    var ItemName = $("#ItemName").val();
+	    var GodownID = $("#GodownID").val();
+	    $.ajax({
+          url:"<?php echo admin_url(); ?>sale_reports/ExportItemWiseStockReport",
+          method:"POST",
+          data:{from_date:from_date, to_date:to_date, ItemID:ItemID,ItemName:ItemName,GodownID:GodownID},
+          beforeSend: function () {
+            $('#searchh2').css('display','block');
+         },
+          complete: function () {
+            $('#searchh2').css('display','none');
+         },
+        success:function(data){
+            response = JSON.parse(data);
+            window.location.href = response.site_url+response.filename;
+        }
+        });
+});
+</script>
+<script type="text/javascript">
+ function printPage(){
+    
+    var from_date = $("#from_date").val();
+	var to_date = $("#to_date").val();
+	var ItemID = $("#ItemID").val();
+	var ItemName = $("#ItemName").val();
+	var CaseQty = $("#CaseQty").val();
+    
+    var colspan = '15';
+    var ItemDetails = 'ItemID : '+ ItemID+ ' , ItemName : '+ItemName+ ' , CaseQty : '+CaseQty;
+    var filterdate = 'Report Date : '+from_date+' To '+to_date;
+	var heading_data = '<table  border="1" cellpadding="0" cellspacing="0" width="100%" class="tree table table-striped table-bordered" style="font-size:12px;">';
+    heading_data += '<tbody><tr><td style="text-align:center;" colspan="'+colspan+'"><?php echo $company_detail->company_name; ?></td></tr>';
+    heading_data += '<tr><td style="text-align:center;" colspan="'+colspan+'"><?php echo $company_detail->address; ?></td></tr>';    
+    heading_data += '<tr><td style="text-align:left;"colspan="'+colspan+'">'+filterdate+'</td></tr>';
+    heading_data += '<tr><td style="text-align:left;"colspan="'+colspan+'">'+ItemDetails+'</td></tr>';
+    heading_data += '</tbody></table>';
+    
+	var stylesheet = '<style type = "text/css"> th, td { padding: 5px 5px;} .show_in_print{ display:block; }</style>';
+    var tableData = '<table  border="1" cellpadding="0" cellspacing="0" width="100%" class="tree table table-striped table-bordered" style="font-size:12px;">'+document.getElementsByTagName('table')[0].innerHTML+'</table>';
+       
+    var print_data = stylesheet+heading_data+tableData
+   newWin= window.open("");
+   newWin.document.write(print_data);
+   newWin.print();
+   newWin.close();
+ };
+</script>
+<script>
+$(document).ready(function(){
+    var maxEndDate = new Date('Y/m/d');
+    var fin_y = "<?php echo $this->session->userdata('finacial_year')?>";
+    
+    var year = "20"+fin_y;
+    
+    
+    var cur_y = new Date().getFullYear().toString().substr(-2);
+    if(cur_y => fin_y){
+        var year2 = parseInt(fin_y) + parseInt(1);
+        var year2_new = "20"+year2;
+        
+        var e_dat = new Date(year2_new+'/03/31');
+        var maxEndDate_new = e_dat;
+    }else{
+         var maxEndDate_new = maxEndDate;
+    }
+    
+    var minStartDate = new Date(year, 03);
+  
+    $('#from_date').datetimepicker({
+        format: 'd/m/Y',
+        minDate: minStartDate,
+        maxDate: maxEndDate_new,
+        timepicker: false
+    });
+    
+    $('#to_date').datetimepicker({
+        format: 'd/m/Y',
+        minDate: minStartDate,
+        maxDate: maxEndDate_new,
+        timepicker: false
+    });
+    
+});
+</script> 

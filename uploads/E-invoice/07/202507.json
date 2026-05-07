@@ -1,0 +1,41 @@
+{
+    "gstin": "27AAGCG1483L1ZA",
+    "ret_period": "032025",
+    "sup_details": {
+        "osup_det": {
+            "txval": 0,
+            "iamt": 0,
+            "camt": 0,
+            "samt": 0,
+            "csamt": 0
+        },
+        "osup_zero": {
+            "txval": 0,
+            "iamt": 0,
+            "camt": 0,
+            "samt": 0,
+            "csamt": 0
+        },
+        "osup_nil_exmp": {
+            "txval": 0,
+            "iamt": 0,
+            "camt": 0,
+            "samt": 0,
+            "csamt": 0
+        },
+        "isup_rev": {
+            "txval": 0,
+            "iamt": 0,
+            "camt": 0,
+            "samt": 0,
+            "csamt": 0
+        },
+        "osup_nongst": {
+            "txval": 0,
+            "iamt": 0,
+            "camt": 0,
+            "samt": 0,
+            "csamt": 0
+        }
+    }
+}

@@ -1,0 +1,505 @@
+<?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
+<?php init_head(); ?>
+<style>
+    
+.stock_position          { overflow: auto;max-height: 55vh;width:100%;position:relative;top: 0px; }
+.stock_position thead th { position: sticky; top: 0; z-index: 1; }
+.stock_position tbody th { position: sticky; left: 0; }
+
+
+table  { border-collapse: collapse; width: 100%; }
+th, td { padding: 1px 5px !important; white-space: nowrap; border:1px solid !important;font-size:11px; line-height:1.42857143!important;vertical-align: middle !important;}
+th     { background: #50607b;
+    color: #fff !important; }
+    
+    
+ .fixed_headers tbody td {
+    border: 1px solid #E3E3E3;
+    padding: 0px 5px; 
+}
+    
+.fixed_headers thead tr th{
+    background-color: #f5f5f5 !important;
+    color: #333;
+    height: 20px;
+    /*width: 100%;*/
+}
+</style>
+<div id="wrapper">
+  <div class="content">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="panel_s">
+          <div class="panel-body">
+              <div class="_buttons">
+                <div class="row"> 
+                <div class="col-md-2">
+                   <div class="">
+                       <div class="col-md-12">
+                        <?php
+                                $fy = $this->session->userdata('finacial_year');
+                                $fy_new  = $fy + 1;
+                                $lastdate_date = '20'.$fy_new.'-03-31';
+                                $firstdate_date = '20'.$fy_new.'-04-01';
+                                $curr_date = date('Y-m-d');
+                                $curr_date_new    = new DateTime($curr_date);
+                                $last_date_yr = new DateTime($lastdate_date);
+                                if($last_date_yr < $curr_date_new){
+                                    $to_date = '31/03/20'.$fy_new;
+                                    $from_date = '01/03/20'.$fy_new;
+                                }else{
+                                    $from_date = "01/".date('m')."/".date('Y');
+                                    $to_date = date('d/m/Y');
+                                }
+                            ?>   
+                            <?php echo render_date_input('from_date','FROM',$from_date);  ?>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            
+                            <?php echo render_date_input('to_date','TO',$to_date); ?>
+                        </div>
+                        
+                        
+                        
+                        <div class="col-md-12">
+                            
+                            <div class="form-group">
+                                <label class="control-label">Group</label>
+                                <select name="item_main_group" id="item_main_group" class="selectpicker" data-none-selected-text="Non selected" data-width="100%" data-live-search="true">
+                                <?php
+                                foreach ($main_item_group as $key => $value) {
+                                ?>
+                                    <option value="<?php echo $value["id"];?>"><?php echo $value["name"];?></option>
+                                <?php
+                                }
+                                ?>
+                                
+                            </select>
+                            </div>
+                       
+                            <?php //echo render_select( 'item_main_group',$main_item_group,array( 'id',array( 'name')), 'Group'); ?>
+                        </div>
+                        
+                        
+                        
+                        
+             
+                    </div> 
+                </div>
+                <div class="col-md-7">
+                    <div class="row">
+                        <div class="col-md-12" style="border:1px solid #ccc;height:175px">
+                            <!--<div class="row" id="item_group_show">
+                                
+                            </div>-->
+                            <div class="form-group">
+                                <table id="itemdivision" class="fixed_headers">
+                                    <thead>
+                                        <tr>
+                                            <th style="padding:5px;"><input id="All" name="All" type="checkbox" value="true" onclick="toggle(this);"><input name="All" type="hidden" value="true"> &nbsp;All
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style="display:grid;grid-template-columns: 4fr 4fr 4fr;" class="itemgroup_body" >
+                                        
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="custom_button">
+                               <a class="btn btn-default buttons-excel buttons-html5" tabindex="0" aria-controls="stock_position" href="#" id="caexcel" style="font-size:12px;"><span>Export</span></a>
+                                <a class="btn btn-default" href="javascript:void(0);" onclick="printPage();">Print</a>
+                                <!--<a class="dt-button buttons-pdf buttons-html5" tabindex="0" aria-controls="ca_datatable" href="#"><span>Export to PDF</span></a>-->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="custom_button">
+                                <button class="btn btn-info pull-left mleft5 search_data" id="search_data" style="font-size:12px;">Show</button>
+                            </div>
+                        </div>
+                    </div>
+                   
+                </div>
+           
+        
+             </div>
+        
+               
+            </div>
+            <div class="clearfix"></div>
+            
+        <?php
+        //print_r($company_detail);
+        ?>
+        <div class="row">
+            <div class="col-md-12">
+                <span id="searchh" style="display:none;">Loading.....</span>
+        <span id="searchh2" style="display:none;">Please wait exporting data.....</span>
+                <input type="text" id="myInput1" onkeyup="myFunction2()" placeholder="Search for names.." title="Type in a name" style="float: right;">
+                <div class="stock_position load_data">
+              
+                </div>
+            </div>
+        </div>
+            
+            
+              
+          </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<?php init_tail(); ?>
+<!--new update -->
+<script>
+    
+function myFunction2() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput1");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("stock_position");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    td1 = tr[i].getElementsByTagName("td")[1];
+    td2 = tr[i].getElementsByTagName("td")[2];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      }else if(td1){
+         txtValue = td1.textContent || td1.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      }else if(td2){
+         txtValue = td2.textContent || td2.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }    }}   
+  }
+}
+</script>
+<script src="<?= base_url() ?>public/plugins/jquery.table2excel.js"></script>
+<script type="text/javascript" language="javascript" >
+$(document).ready(function(){
+    
+    var main_item_group_id = $("#item_main_group").val();
+    var from_date = $("#from_date").val();
+	var to_date = $("#to_date").val();
+	
+	get_item_group(main_item_group_id,from_date,to_date);
+ 
+  function get_item_group(main_item_group_id,from_date,to_date)
+  {
+    $.ajax({
+      url:"<?php echo admin_url(); ?>misc_reports/get_item_groupFR_StkP",
+      dataType:"JSON",
+      method:"POST",
+      data:{main_item_group_id:main_item_group_id,from_date:from_date,to_date:to_date},
+      success:function(data){
+          var html = '';
+          if(data.length === 0){
+            html += '<tr>';
+            html += '<td style="border-bottom:none;width:100px;"> No sale for selected date</td></tr>';
+            $('.itemgroup_body').html(html);
+        }else{
+            
+            for(var count = 0; count < data.length; count++)
+            {
+                
+            html += '<tr>';
+            html += '<td style="border:none !important;">';
+            html += '<input id="'+data[count].id+'" name="chk" class="chk" type="checkbox" value="'+data[count].id+'" checked>';
+            html += '</td>';
+            html += '<td style="border:none !important;">';
+            html += '<label for="'+data[count].name+'" style="font-size:11px;">'+data[count].name+'</label>';
+            html += '</td>';
+            html += '</tr>';
+            }
+            toggle(true);
+            $('.itemgroup_body').html(html);
+        }
+        }
+    });
+  }
+ 
+  $('#from_date').on('change',function(){
+        
+        var main_item_group_id = $("#item_main_group").val();
+        var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    get_item_group(main_item_group_id,from_date,to_date);
+        
+ });
+ 
+ $('#to_date').on('change',function(){
+        
+        var main_item_group_id = $("#item_main_group").val();
+        var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    get_item_group(main_item_group_id,from_date,to_date);
+        
+ });
+ $('#item_main_group').on('change',function(){
+     
+        
+	    var main_item_group_id = $("#item_main_group").val();
+        var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    get_item_group(main_item_group_id,from_date,to_date);
+        
+ });
+ 
+ $('#report_in3').on('change', function() {
+	var id = $(this).val();
+	//alert(id);
+	var url = "<?php echo base_url(); ?>admin/sale_reports/staff_list_by_role";
+        jQuery.ajax({
+                type: 'POST',
+                url:url,
+                data: {id: id},
+                dataType:'json',
+                success: function(data) {
+                           
+                    $("#staff_name").children().remove();
+                    $('#staff_name').append('<option value="">Non Selected</option>');
+                    $.each(data, function (index, value) {
+                    // APPEND OR INSERT DATA TO SELECT ELEMENT.
+                    $('#staff_name').append('<option value="' + value.staffid + '">' + value.firstname +' '+ value.lastname + '</option>');
+                    });     
+                    $("#staff_name").selectpicker("refresh");
+                    }
+        });
+	});
+
+
+ 
+ $('#search_data').on('click',function(){
+        var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    var item_main_group = $("#item_main_group").val();
+	    var item_group = '';
+	    var favorite = [];
+            $.each($("input[name='chk']:checked"), function(){
+                favorite.push($(this).val());
+            });
+	    var item_group = favorite.join(",");
+	    //alert(item_group);
+
+	    if(item_group == "" || item_group== null){
+	        alert('please select item group');
+	    }else{
+	        $.ajax({
+          url:"<?php echo admin_url(); ?>misc_reports/get_stock_dataNew",
+          dataType:"JSON",
+          method:"POST",
+          cache: false,
+          data:{from_date:from_date, to_date:to_date, item_group:item_group,item_main_group:item_main_group},
+          beforeSend: function () {
+                   
+            $('#searchh').css('display','block');
+            $('.load_data').css('display','none');
+            
+         },
+          complete: function () {
+                                
+            $('.load_data').css('display','');
+            $('#searchh').css('display','none');
+         },
+          success:function(data){
+              
+                $('.load_data').html(data);
+           
+            
+          }
+        });
+	    }
+ });
+});
+
+ $("#caexcel").click(function(){
+  var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    var item_main_group = $("#item_main_group").val();
+	    var item_group = '';
+	    var favorite = [];
+            $.each($("input[name='chk']:checked"), function(){
+                favorite.push($(this).val());
+            });
+	    var item_group = favorite.join(",");
+	    //alert(item_group);
+
+	    if(item_group == "" || item_group== null){
+	        alert('please select item group');
+	    }else{
+  $.ajax({
+            url:"<?php echo admin_url(); ?>misc_reports/export_stock_report",
+            method:"POST",
+           data:{from_date:from_date, to_date:to_date, item_group:item_group,item_main_group:item_main_group},
+            beforeSend: function () {
+               $('#searchh2').css('display','block');
+            },
+            complete: function () {
+                $('#searchh2').css('display','none');
+            },
+            success:function(data){
+                response = JSON.parse(data);
+                window.location.href = response.site_url+response.filename;
+            }
+        });
+	    } 
+});
+
+function newexportaction(e, dt, button, config) {
+         var self = this;
+         var oldStart = dt.settings()[0]._iDisplayStart;
+         dt.one('preXhr', function (e, s, data) {
+             // Just this once, load all data from the server...
+             data.start = 0;
+             data.length = 2147483647;
+             dt.one('preDraw', function (e, settings) {
+                 // Call the original action function
+                 if (button[0].className.indexOf('buttons-copy') >= 0) {
+                     $.fn.dataTable.ext.buttons.copyHtml5.action.call(self, e, dt, button, config);
+                 } else if (button[0].className.indexOf('buttons-excel') >= 0) {
+                     $.fn.dataTable.ext.buttons.excelHtml5.available(dt, config) ?
+                         $.fn.dataTable.ext.buttons.excelHtml5.action.call(self, e, dt, button, config) :
+                         $.fn.dataTable.ext.buttons.excelFlash.action.call(self, e, dt, button, config);
+                 } else if (button[0].className.indexOf('buttons-csv') >= 0) {
+                     $.fn.dataTable.ext.buttons.csvHtml5.available(dt, config) ?
+                         $.fn.dataTable.ext.buttons.csvHtml5.action.call(self, e, dt, button, config) :
+                         $.fn.dataTable.ext.buttons.csvFlash.action.call(self, e, dt, button, config);
+                 } else if (button[0].className.indexOf('buttons-pdf') >= 0) {
+                     $.fn.dataTable.ext.buttons.pdfHtml5.available(dt, config) ?
+                         $.fn.dataTable.ext.buttons.pdfHtml5.action.call(self, e, dt, button, config) :
+                         $.fn.dataTable.ext.buttons.pdfFlash.action.call(self, e, dt, button, config);
+                 } else if (button[0].className.indexOf('buttons-print') >= 0) {
+                     $.fn.dataTable.ext.buttons.print.action(e, dt, button, config);
+                 }
+                 dt.one('preXhr', function (e, s, data) {
+                     // DataTables thinks the first item displayed is index 0, but we're not drawing that.
+                     // Set the property to what it was before exporting.
+                     settings._iDisplayStart = oldStart;
+                     data.start = oldStart;
+                 });
+                 // Reload the grid with the original page. Otherwise, API functions like table.cell(this) don't work properly.
+                 setTimeout(dt.ajax.reload, 0);
+                 // Prevent rendering of the full data to the DOM
+                 return false;
+             });
+         });
+         // Requery the server with the new one-time export settings
+         dt.ajax.reload();
+     }
+     
+    $(document).ready(function() {
+  $('tbody').scroll(function(e) { //detect a scroll event on the tbody
+  	/*
+    Setting the thead left value to the negative valule of tbody.scrollLeft will make it track the movement
+    of the tbody element. Setting an elements left value to that of the tbody.scrollLeft left makes it maintain 			it's relative position at the left of the table.    
+    */
+    $('thead').css("left", -$("tbody").scrollLeft()); //fix the thead relative to the body scrolling
+    $('thead th:nth-child(1)').css("left", $("tbody").scrollLeft()); //fix the first cell of the header
+    $('tbody td:nth-child(1)').css("left", $("tbody").scrollLeft()); //fix the first column of tdbody
+  });
+});
+</script>
+<style>
+    input[type=checkbox], input[type=radio] {
+    margin: 4px 4px 0px;
+    line-height: normal;
+}
+</style>
+
+<script>
+$(document).ready(function(){
+    var maxEndDate = new Date('Y/m/d');
+    var fin_y = "<?php echo $this->session->userdata('finacial_year')?>";
+    
+    var year = "20"+fin_y;
+    
+    
+    var cur_y = new Date().getFullYear().toString().substr(-2);
+    if(cur_y > fin_y){
+        var year2 = parseInt(fin_y) + parseInt(1);
+        var year2_new = "20"+year2;
+        
+        var e_dat = new Date(year2_new+'/03/31');
+        var maxEndDate_new = e_dat;
+    }else{
+         var maxEndDate_new = maxEndDate;
+    }
+    
+    var minStartDate = new Date(year, 03);
+   /* console.log(minStartDate);
+    console.log(maxEndDate_new);*/
+    
+    $('#from_date').datetimepicker({
+        format: 'd/m/Y',
+        minDate: minStartDate,
+        maxDate: maxEndDate_new,
+        timepicker: false
+    });
+    
+    $('#to_date').datetimepicker({
+        format: 'd/m/Y',
+        minDate: minStartDate,
+        maxDate: maxEndDate_new,
+        timepicker: false
+    });
+    
+});
+</script> 
+
+<script>
+function toggle(source) {
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    for (var i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i] != source)
+            checkboxes[i].checked = source.checked;
+    }
+}
+</script>
+
+<script type="text/javascript">
+ function printPage(){ 
+        
+        var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    var comp_name = $("#comp_name").val();
+	    var comp_addr = $("#comp_addr").val();
+	    var filterdate = $("#filterdate").val();
+	    var rate_base = $("#rate_base").val();
+	    var filter_group = $("#filter_group").val();
+	    var stylesheet = '<style type = "text/css"> th, td { padding: 5px 5px;} .hide_in_print{ display:none; }</style>';
+        var tableData = '<table  border="1" cellpadding="0" cellspacing="0" width="100%" class="tree table table-striped table-bordered" style="font-size:12px;">'+document.getElementsByTagName('table')[1].innerHTML+'</table>';
+        var heading_data = '<table  border="1" cellpadding="0" cellspacing="0" width="100%" class="tree table table-striped table-bordered" style="font-size:12px;"><tbody><tr><td style="text-align:center;" colspan="9">'+comp_name+'</td></tr><tr><td style="text-align:center;" colspan="9">'+comp_addr+'</td></tr>';
+        
+        heading_data += '<tr><td style="text-align:left;"colspan="9">'+filterdate+'</td></tr>';
+        heading_data += '<tr><td style="text-align:left;"colspan="9">'+rate_base+'</td></tr>';
+        heading_data += '<tr><td style="text-align:left;"colspan="9">'+filter_group+'</td></tr>';
+        
+         heading_data += '</tbody></table>';
+        var print_data = stylesheet+heading_data+tableData
+   newWin= window.open("");
+   newWin.document.write(print_data);
+   newWin.print();
+   newWin.close();
+    };
+ </script>

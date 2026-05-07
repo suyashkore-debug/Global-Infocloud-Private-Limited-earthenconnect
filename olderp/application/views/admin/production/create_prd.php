@@ -1,0 +1,806 @@
+<?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
+<?php init_head(); ?>
+<div id="wrapper">
+  <div class="content">
+    <div class="row">
+      <div class="col-md-10">
+        <div class="panel_s">
+          <div class="panel-body">
+              
+              <div class="_buttons">
+				<h4>Create Production Order</h4>
+			  </div>
+              <div class="clearfix"></div>
+			   <?php echo form_open('admin/production/create_prd',array('id'=>'production_form')); ?>
+			  <div class="row">
+			  
+			    <div class="col-md-2">
+				<?php
+                    $selected_company = $this->session->userdata('root_company');
+                    $fy = $this->session->userdata('finacial_year');
+                    if($selected_company == 1){
+                        $prd_numbar = get_option('next_prd_number_for_cspl');
+                    }elseif($selected_company == 2){
+                        $prd_numbar = get_option('next_prd_number_for_cff');
+                    }elseif($selected_company == 3){
+                        $prd_numbar = get_option('next_prd_number_for_cbu');
+                    }
+                    $prefix = 'PRD'.'<span id="prefix_year">'.$fy.'</span>';
+                    
+                   $new_prd_numbar = str_pad($prd_numbar, get_option('number_padding_prefixes'), '0', STR_PAD_LEFT);
+                 ?> 
+					<div class="form-group">
+                           <label for="number">PRD Number</label>
+                        <div class="input-group">
+                        <span class="input-group-addon"><?php echo $prefix;?></span>
+                          <input type="text" name="pro_orderid" id="pro_orderid" class="form-control receiptsid" value="<?php echo $new_prd_numbar; ?>" >
+                        </div>
+                    </div>
+						
+                </div>
+               
+                <div class="col-md-2">
+				<?php
+                    $fy = $this->session->userdata('finacial_year');
+                    $fy_new  = $fy + 1;
+                    $lastdate_date = '20'.$fy_new.'-03-31';
+                    $firstdate_date = '20'.$fy_new.'-04-01';
+                    $curr_date = date('Y-m-d');
+                    $curr_date_new    = new DateTime($curr_date);
+                    $last_date_yr = new DateTime($lastdate_date);
+                    if($last_date_yr < $curr_date_new){
+                        $to_date = '31/03/20'.$fy_new;
+                        $from_date = '01/03/20'.$fy_new;
+                    }else{
+                        $from_date = "01/".date('m')."/".date('Y');
+                        $to_date = date('d/m/Y');
+                    }
+                    $attr = array();
+                ?>    
+                    
+                   <?php echo render_date_input('start_date1','Date',$to_date,$attr); ?>
+                   <input type="hidden" name="start_date" id="start_date" value="<?php echo $to_date;?>">
+				   <input type="hidden" name="PRDID" id="PRDID" value="">
+				   <input type="hidden" name="PlantID" id="PlantID" value="<?php echo $selected_company; ?>">
+				   <?php $PRDLastDateNew = str_replace("-","/",$PRDLastDate); ?>
+				   <input type="hidden" name="LastPRDDate" id="LastPRDDate" value="<?php echo $PRDLastDateNew; ?>">
+                </div>
+				
+				<div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="BOMID">
+                        <small class="req text-danger">* </small>
+                        <label for="BOMID" class="form-label">BOM ID</label> 
+                        <select name="BOMID" id="BOMID" class="selectpicker form-control" data-none-selected-text="Non Selected" data-live-search="true">
+                            <option value="">Non Selected</option>
+                        <?php
+                            foreach ($BOMList as $key => $value) {
+                        ?>
+                                <option value="<?php echo $value['BOMID'];?>"><?php echo $value['BOMID'];?></option>
+                        <?php
+                            }
+                        ?>
+                        </select>
+                    </div>
+                </div>
+                
+				<div class="col-md-2">
+                    <?php
+                        $attr = array('disabled'=>true);
+                    ?>
+                    <?php echo render_input('ItemName','BOM Name','','',$attr); ?>
+                    <input type="hidden" name="ItemID" id="ItemID" value="">
+                    <input type="hidden" name="qtytoproduce_hidden" id="qtytoproduce_hidden" value="">
+                    <input type="hidden" name="fg_unit_hidden" id="fg_unit_hidden" value="">
+                    <input type="hidden" name="bom_comments_hidden" id="bom_comments_hidden" value="">
+                </div>
+				
+				<div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="qtytoproduce">
+                        <label for="qtytoproduce" class="control-label">FG Quantity </label>
+                        <input type="text" name="qtytoproduce" readonly id="qtytoproduce" class="form-control" value="" >
+                                        
+                    </div>
+                </div> 
+                <div class="col-md-2">
+				    <?php 
+				        $attr = array(
+				            'disabled' =>true
+				        );
+				    ?>
+				    <?php echo render_input('unit1','Unit','','',$attr); ?>
+                </div>
+			</div>	
+			
+			
+			<div class="row">
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="fg_store">
+                        <small class="req text-danger">* </small>
+                        <label for="fg_store" class="form-label">FG Store</label> 
+                        <select name="fg_store" id="fg_store" class="selectpicker form-control" data-none-selected-text="Non Selected" data-live-search="true">
+                            <option value="">Non Selected</option>
+                        <?php
+                            foreach ($GodownData as $key => $value) {
+                        ?>
+                                <option value="<?php echo $value['AccountID'];?>"><?php echo $value['AccountName'];?></option>
+                        <?php
+                            }
+                        ?>
+                        </select>
+                    </div>
+                </div>
+                
+                
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="rm_store">
+                        <small class="req text-danger">* </small>
+                        <label for="rm_store" class="form-label">RM Store</label> 
+                        <select name="rm_store" id="rm_store" class="selectpicker form-control" data-none-selected-text="Non Selected" data-live-search="true">
+                            <option value="">Non Selected</option>
+                        <?php
+                            foreach ($GodownData as $key => $value) {
+                        ?>
+                                <option value="<?php echo $value['AccountID'];?>"><?php echo $value['AccountName'];?></option>
+                        <?php
+                            }
+                        ?>
+                        </select>
+                    </div>
+                </div>
+                
+                
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="scrap_store">
+                        <small class="req text-danger">* </small>
+                        <label for="scrap_store" class="form-label">Scrap Store</label> 
+                        <select name="scrap_store" id="scrap_store" class="selectpicker form-control" data-none-selected-text="Non Selected" data-live-search="true">
+                            <option value="">Non Selected</option>
+                        <?php
+                            foreach ($GodownData as $key => $value) {
+                        ?>
+                                <option value="<?php echo $value['AccountID'];?>"><?php echo $value['AccountName'];?></option>
+                        <?php
+                            }
+                        ?>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="operator_name">
+                       <label for="operator_name" class="control-label">Production Manager</label>
+                       <select name="operator_name" id="operator_name" data-live-search="true" class="selectpicker" data-width="100%" data-none-selected-text="Non selected">
+                           <option value=""></option>
+                           <?php
+                                foreach ($manager as $key => $value) {
+                                ?>
+                                <option value="<?php echo $value["AccountID"];?>"><?php echo $value['firstname']." ".$value['lastname']?></option>
+                            <?php
+                                }
+                           ?>
+                       </select>
+                   </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="cost_allocation">
+                        <label for="cost_allocation" class="control-label">Cost Allocation </label>
+                        <input type="text" name="cost_allocation" readonly id="cost_allocation" class="form-control" value="" >
+                    </div>
+                </div> 
+                
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="bom_comments">
+                        <label for="bom_comments" class="control-label">Comment </label>
+                        <input type="text" name="bom_comments" readonly id="bom_comments" class="form-control" value="" >
+                    </div>
+                </div> 
+                
+                
+            </div>
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="labour_cost">
+                        <label for="labour_cost" class="control-label">Labour Cost</label>
+                        <input type="text" name="labour_cost" readonly id="labour_cost" class="form-control" value="" >
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="electricity_cost">
+                        <label for="electricity_cost" class="control-label">Electricity Cost</label>
+                        <input type="text" name="electricity_cost" readonly id="electricity_cost" class="form-control" value="" >
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="machinery_cost">
+                        <label for="machinery_cost" class="control-label">Machinery Cost</label>
+                        <input type="text" name="machinery_cost" readonly id="machinery_cost" class="form-control" value="" >
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="other_cost">
+                        <label for="other_cost" class="control-label">Other Cost</label>
+                        <input type="text" name="other_cost" readonly id="other_cost" class="form-control" value="" >
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="status">
+                        <label for="status" class="control-label">Status</label>
+                        <select name="status" id="status" data-live-search="true" class="selectpicker" data-width="100%">
+                            <option value="1">Pending</option>
+                        </select>
+                    </div>
+                </div>
+                
+            </div>
+			<div class="row">
+			    <div class="col-md-10">
+			        <div id="rawMaterial"></div>
+			    </div>
+			</div>
+			
+			
+			
+			
+		
+			<div class="row">
+				<div class="col-md-1" >
+                <?php
+                    if (has_permission_new('production', '', 'create')) {
+                    ?>    
+                    <button type="submit" id="submit" class="btn btn-info"><?php echo _l('submit'); ?></button>
+                    <?php } ?>
+                </div>
+                <!--<div class="col-md-1" >
+                     <?php
+                    if (has_permission_new('production', '', 'view')) {
+                    ?> 
+                    <a href="#" class="btn btn-info add-new-transfer mbot15">show list</a>
+                    <?php } ?>
+                </div>-->
+			</div>
+			 <?php echo form_close(); ?>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="transfer-modal" data-keyboard="false" data-backdrop="static">
+   <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+         <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Production List</h4>
+         </div>
+         <div class="modal-body">
+             
+            <div class="row">
+                <?php $current_date = date('d/m/Y'); 
+                $from_date = '01/'.date('m').'/'.date('Y');
+                ?>
+                <div class="col-md-3">
+                    <?php
+                   echo render_date_input('from_date','From',$from_date);
+                   ?>
+                </div>
+                <div class="col-md-3">
+                    <?php
+                   echo render_date_input('to_date','To',$current_date);
+                   ?>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group" app-field-wrapper="status_list">
+                       <label for="status_list" class="control-label"><?php echo _l('Order Status'); ?></label>
+                       <select name="status_list" id="status_list" class="selectpicker" data-width="100%" data-none-selected-text="Non selected">
+                           <option value="pending">Pending</option>
+                           <option value="In-Progress">In-Progress</option>
+                           <option value="Completed">Completed</option>
+                       </select>
+                   </div>
+                </div>
+                <div class="col-md-1">
+                    <br>
+                    <button class="btn btn-info pull-left mleft5 search_data" id="search_data"><?php echo _l('rate_filter'); ?></button>
+                </div>
+                <div class="col-md-3">
+                    <br>
+                    <input type="text" id="myInput1" onkeyup="myFunction2()" placeholder="Search for names.." title="Type in a name" style="float: right;">
+                </div>
+                <div class="col-md-12">
+                 
+            <div class="table_production_report">
+             
+              <table class="tree table table-striped table-bordered table_production_report" id="table_production_report" width="100%">
+                  
+                <thead>
+                    <tr style="display:none;">
+                      <td colspan="9" ><h5 style="text-align:center;"><span style="font-size:15px;font-weight:700;"><?php echo $company_detail->company_name; ?></span><br><span style="font-size:10px;font-weight:600;"><?php echo $company_detail->address; ?></span><br><span class="report_for" style="font-size:10px;"></span></h5></td>
+                  </tr>
+                  <tr>
+                    <th style="text-align:left;">ProductionID</th>
+                    <th style="text-align:left;">PRDDate</th>
+                    <th style="text-align:left;">RecipeName</th>
+                    <th style="text-align:left;">BatchQty</th>
+                    <th style="text-align:left;">FGQty</th>
+                    <th style="text-align:left;">ReqTM</th>
+                    <th style="text-align:left;">PRDTM</th>
+                    <th style="text-align:left;">Man/Con Name</th>
+                    <th style="text-align:left;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>   
+            </div>
+            <span id="searchh2" style="display:none;">
+                                Loading.....
+                            </span>
+                    
+                </div>
+              </div>
+              
+         </div>
+        
+      </div>
+   </div>
+</div>
+<style>
+#recipeID {
+    text-transform: uppercase;
+}
+    .table_production_report { overflow: auto;max-height: 60vh;width:100%;position:relative;top: 0px; }
+.table_production_report thead th { position: sticky; top: 0; z-index: 1; }
+.table_production_report tbody th { position: sticky; left: 0; }
+
+/* Just common table stuff. Really. */
+.table_production_report table  { border-collapse: collapse; width: 100%; }
+.table_production_report th, td { padding: 3px 3px !important; white-space: nowrap;font-size:11px; line-height:1.42857143;vertical-align: middle;}
+.table_production_report th     { background: #50607b;color: #fff !important; }
+
+
+#table_production_report tr:hover {
+    background-color: #ccc;
+}
+
+#table_production_report td:hover {
+    cursor: pointer;
+}
+</style>
+<?php init_tail(); ?>
+
+<script type="text/javascript" language="javascript" >
+$(document).ready(function(){
+    $("#BOMID").on("change",function(){
+        var BOMID = $(this).val();
+        if(BOMID != ""){
+            $.ajax({
+                url:"<?php echo admin_url(); ?>production/get_bom_fm_details",
+                dataType:"JSON",
+                method:"POST",
+                cache: false,
+                data:{BOMID:BOMID},
+                success:function(data){
+                    $('#ItemName').val(data.item_description);
+                    $('#qtytoproduce').val(data.qty);
+                    $('#unit1').val(data.unit);
+                    $('#cost_allocation').val(data.cost_allocation);
+                    $('#bom_comments').val(data.bom_comments);
+                    $('#labour_cost').val(data.conv_cost);
+                    $('#electricity_cost').val(data.st_cost);
+                    $('#machinery_cost').val(data.frt_cost);
+                    $('#other_cost').val(data.mrkt_cost);
+                    $('#ItemID').val(data.item_code);
+                    $('#qtytoproduce_hidden').val(data.qty);
+                    $('#fg_unit_hidden').val(data.unit);
+                    $('#bom_comments_hidden').val(data.bom_comments);
+                    $('select[name=fg_store]').val(data.FG_Godown);
+                    $('.selectpicker').selectpicker('refresh');
+                    $('select[name=rm_store]').val(data.RM_Godown);
+                    $('.selectpicker').selectpicker('refresh');
+                    $('select[name=scrap_store]').val(data.Scrap_Godown);
+                    $('.selectpicker').selectpicker('refresh');
+                    showData();
+                }
+            });
+        }else{
+            alert('please select BOM');
+        }
+    });
+    
+    function showData() 
+    {
+        var BOMID =$('#BOMID').val();
+        
+        if(BOMID == ""){
+            $("#rawMaterial").html();
+        }else{
+            $.ajax({
+                type:'POST',
+                url: "<?=base_url()?>admin/production/GetBOM_RM_view",
+                data:{'BOMID':BOMID},
+                
+                success:function(data){
+                	
+                $("#rawMaterial").html(data);
+                }  
+            }); 
+        }
+    }
+ 
+  function load_data(from_date,to_date,status_list)
+  {
+    $.ajax({
+      url:"<?php echo admin_url(); ?>production/load_data_for_production",
+      dataType:"JSON",
+      method:"POST",
+      data:{from_date:from_date, to_date:to_date,status_list:status_list},
+      beforeSend: function () {
+               
+        $('#searchh2').css('display','block');
+        $('.table_production_report tbody').css('display','none');
+        
+     },
+      complete: function () {
+                            
+        $('.table_production_report tbody').css('display','');
+        $('#searchh2').css('display','none');
+     },
+      success:function(data){
+        var html = '';
+      
+        for(var count = 0; count < data.length; count++)
+        {
+          
+        var url = "'<?php echo admin_url() ?>production/production_order/"+data[count].pro_order_id+"'";
+        html += '<tr onclick="location.href='+url+'">';
+        html += '<td style="text-align:center;">'+data[count].pro_order_id+'</td>';
+          
+        var date = data[count].TransDate.substring(0, 10);
+        var date_new = date.split("-").reverse().join("/");
+          
+        html += '<td  style="text-align:center;">'+date_new+'</td>';
+        html += '<td style="text-align:center;">'+data[count].recipeID+'</td>';
+        html += '<td style="text-align:center;">'+data[count].batch_qty+'</td>';
+        html += '<td style="text-align:center;">'+data[count].Finish_good_qty_new+'</td>';
+        html += '<td style="text-align:center;">'+data[count].required_time+'</td>';
+        html += '<td style="text-align:center;">'+data[count].production_time+'</td>';
+          if(data[count].contractor_name == null){
+              if(data[count].lastname == null){
+                  var AccoutName = data[count].firstname;
+              }else{
+                  var AccoutName = data[count].firstname + data[count].lastname;
+              }
+              
+          }else{
+              var AccoutName = data[count].conName;
+          }
+          html += '<td  style="text-align:left;">'+ AccoutName +'</td>';
+          html += '<td  style="text-align:center;">'+data[count].production_status+'</td>';
+          html += '</tr>';
+        }
+         $('.table_production_report tbody').html(html);
+      
+      }
+    });
+  }
+  
+ $('#search_data').on('click',function(){
+        var from_date = $("#from_date").val();
+	    var to_date = $("#to_date").val();
+	    var status_list = $("#status_list").val();
+	    
+        load_data(from_date,to_date,status_list);
+        
+ });
+
+});
+</script>
+<script>
+    $('.add-new-transfer').on('click', function(){
+    $('#transfer-modal').find('button[type="submit"]').prop('disabled', false);
+      $('#transfer-modal').modal('show');
+    });
+</script>
+    
+<script type='text/javascript'>
+   $(document).ready(function(){
+	 $("#GodownID").focus();	
+      // recipe name 
+     $( "#recipeID" ).autocomplete({
+        source: function( request, response ) {
+          // Fetch data
+          $.ajax({
+            url: "<?=base_url()?>admin/production/itemlist_recipe",
+            type: 'post',
+            dataType: "json",
+            data: {
+              search: request.term
+            },
+            beforeSend: function () {
+               
+               $('#serchh').css('display','block');
+               //$("#ui-id-2").prepend("<li value='' class='ui-menu-item'>Serching</li>");
+            },
+            complete: function () {
+                //$("#item_code").val("");
+                $('#serchh').css('display','none');
+            },
+            success: function( data ) {
+                
+              response( data );
+            }
+            
+          });
+        },
+        select: function (event, ui) {
+                
+                $('#recipeID').val(ui.item.value);
+                $('#recipeName').val(ui.item.label);
+				$('#qty_product').val(ui.item.quantity);
+				$('#finishgood_qty').val(ui.item.quantity);
+				$('#defualt_finishgood_qty').val(ui.item.quantity);
+				$('#unit_f_g').val(ui.item.units); // save selected id to input
+				$('#unit_new').val(ui.item.units); // save selected id to input
+				//$('#batch_qty').focus();
+					
+            }
+      });  
+    });
+	
+	$('#recipeID').on('focus',function(){
+        
+        $('#recipeID').val('');
+        $('#recipeName').val('');
+        $('#qty_product').val('');
+        $('#batch_qty').val('');
+		$('#qty_product').val('');
+		$('#finishgood_qty').val('');
+		$('#defualt_finishgood_qty').val('');
+		$('#unit_f_g').val('');
+		$('#unit_new').val('');
+		$('#rawMaterial').html('');
+        
+    });
+    
+    $('#GodownID').change(function() {
+	    $('#recipeID').val('');
+        $('#recipeName').val('');
+        $('#qty_product').val('');
+        $('#batch_qty').val('');
+		$('#qty_product').val('');
+		$('#finishgood_qty').val('');
+		$('#defualt_finishgood_qty').val('');
+		$('#unit_f_g').val('');
+		$('#unit_new').val('');
+		$('#rawMaterial').html('');
+	});
+     
+	$('#operator_name').change(function() {
+	 
+	   var val = $(this).val();
+	   //alert(val);
+	   if(val == ""){
+	       $('#b *').prop('disabled', false);
+	   }else{
+	       $('#b *').prop('disabled', true);
+	   }
+	});
+	
+
+	$('#con_name').change(function() {
+	 
+	  var val = $(this).val();
+	   //alert(val);
+	   if(val == ""){
+	       $('#a *').prop('disabled', false);
+	   }else{
+	       $('#a *').prop('disabled', true);
+	   }
+    
+	});
+	
+</script>
+<script>
+    function myFunction2() {
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput1");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("table_production_report");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[2];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }       
+  }
+}
+</script>
+<script type="text/javascript">
+
+
+
+//get name
+$(document).on("blur","#recipeID",function(){
+    var recipeID =$('#recipeID').val();
+    var GodownID =$('#GodownID').val();
+    if(recipeID == ""){
+        //$("#rawMaterial").html();
+    }else{
+        if(GodownID  == ""){
+            alert('Please select Main GodownID');
+            $('#recipeID').val('');
+            $('#GodownID').focus();
+        }else{
+            $.ajax({
+                  url:"<?php echo admin_url(); ?>production/get_recipe_details",
+                  dataType:"JSON",
+                  method:"POST",
+                  cache: false,
+                  data:{recipeID:recipeID,GodownID:GodownID},
+                  
+                  success:function(data){
+                    if(empty(data)){
+                        alert('Recipe not found...');
+                        $('#recipeID').val('');
+                        $('#recipeName').val('');
+                        $('#qty_product').val("");
+                        $('#finishgood_qty').val("");
+                        $('#defualt_finishgood_qty').val("");
+                        $('#unit_f_g').val(''); // save selected id to input
+        				$('#unit_new').val('');
+                    }else{
+                        $('#recipeID').val(data.item_code);
+                        $('#recipeName').val(data.item_description);
+        				$('#qty_product').val(data.qty);
+        				$('#finishgood_qty').val(data.qty);
+        				$('#defualt_finishgood_qty').val(data.qty);
+        				$('#unit_f_g').val(data.unit); // save selected id to input
+        				$('#unit_new').val(data.unit);
+        				showData();
+                    }
+                    
+                  }
+            });
+        }
+    }
+
+});
+
+
+$(document).on("blur","#batch_qty",function(){
+    var batch = $(this).val();
+    var recipeID =$('#recipeID').val();
+    if(batch < 1 ){
+        alert('please select atleast 1 qty..');
+        $('#batch_qty').val('1');
+        $.ajax({
+                  url:"<?php echo admin_url(); ?>production/get_recipe_details",
+                  dataType:"JSON",
+                  method:"POST",
+                  cache: false,
+                  data:{recipeID:recipeID},
+                  success:function(data){
+        				$('#qty_product').val(data.qty);
+        				$('#finishgood_qty').val(data.qty);
+        				showData();
+                  }
+            });
+    }else{
+        var defualt_f_g_qty = $('#defualt_finishgood_qty').val();
+        var final_f_g_qty = parseFloat(defualt_f_g_qty) * parseFloat(batch);
+        $('#qty_product').val(final_f_g_qty);
+        $('#finishgood_qty').val(final_f_g_qty);
+    	showData();
+    }
+    
+	return ;
+});
+
+
+
+$(document).ready(function() {
+    $("#production_form").validate({
+        rules: {
+            BOMID: "required",/*,
+			batch_qty: "required",
+			req_hour: "required",
+			req_min: "required",
+			GodownID: "required",*/
+			start_date: {
+				remote: {
+					url: site_url + "admin/misc/CheckPRDDate",
+					type: 'post',
+					data: {
+						Prd_date: function() {
+							return $('input[name="start_date"]').val();
+						},
+						PRDID: function() {
+							return $('input[name="PRDID"]').val();
+						},
+						PlantID: function() {
+							return $('input[name="PlantID"]').val();
+						}
+					}
+				}
+			},
+        },
+        messages: {
+            BOMID: "Please Select BOM",
+			/*batch_qty: "Please Enter Batch Quantity",
+			req_hour: "Please Enter Require Hours",
+			req_min: "Please Enter Require Minute"*/
+        }
+    })
+
+    $('#submit').click(function() {
+        $("#production_form").valid();
+    });
+});
+
+</script> 
+
+<script type="text/javascript">
+   $('#batch_qty,#req_hour,#req_min').on('keypress',function (event) {
+    if ((event.which != 46 || $(this).val().indexOf('.') != -1) && (event.which < 48 || event.which > 57)) {
+        event.preventDefault();
+    }
+    var input = $(this).val();
+    if ((input.indexOf('.') != -1) && (input.substring(input.indexOf('.')).length > 2)) {
+        event.preventDefault();
+    }
+});
+</script>
+<script>
+    function isNumber(evt) {
+    evt = (evt) ? evt : window.event;
+    var charCode = (evt.which) ? evt.which : evt.keyCode;
+    if (charCode = 46 && charCode > 31 
+            && (charCode < 48 || charCode > 57)){
+        return false;
+    }
+    return true;
+    }
+</script>
+
+<script>
+    $(document).ready(function(){
+    
+    var FY = "<?php echo $this->session->userdata('finacial_year')?>";
+    var PlantID = "<?php echo $this->session->userdata('root_company')?>";
+    var LastPRDDate = $('#LastPRDDate').val();
+    var curY = new Date().getFullYear().toString().substr(-2);
+    var LastDateY = parseInt(FY) + parseInt(1);
+    var YDiff = parseInt(curY) -  parseInt(FY);
+    var Y = "20"+LastDateY;
+    if(parseInt(curY) == parseInt(FY)){
+        if(parseInt(PlantID) == 1){
+            var startdate = new Date(LastPRDDate);
+        }else{
+            var startdate = new Date('Y/m/d');
+        }
+        var EndDate = new Date(Y+'/03/31');
+    }else if(parseInt(LastDateY ) == parseInt(curY)){
+        if(parseInt(PlantID) == 1){
+            var startdate = new Date(LastPRDDate);
+        }else{
+            var startdate = new Date('Y/m/d');
+        }
+        var EndDate = new Date(Y+'/03/31');
+    }
+   
+    $('#start_date').datetimepicker({
+        format: 'd/m/Y',
+        minDate: startdate,
+        maxDate: EndDate,
+        timepicker: false
+    });
+    });
+</script> 

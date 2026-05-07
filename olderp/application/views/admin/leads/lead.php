@@ -1,0 +1,484 @@
+<?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
+<div class="modal-header">
+   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+   <h4 class="modal-title">
+      <?php if(isset($lead)){
+         if(!empty($lead->name)){
+           $name = $lead->name;
+         } else if(!empty($lead->company)){
+           $name = $lead->company;
+         } else {
+           $name = _l('lead');
+         }
+         echo '#'.$lead->id . ' - ' .  $name;
+         } else {
+         echo _l('add_new',_l('lead_lowercase'));
+         }
+         ?>
+   </h4>
+</div>
+<div class="modal-body">
+   <?php
+      if(isset($lead)){
+           if($lead->lost == 1){
+              echo '<div class="ribbon danger"><span>'._l('lead_lost').'</span></div>';
+           } else if($lead->junk == 1){
+              echo '<div class="ribbon warning"><span>'._l('lead_junk').'</span></div>';
+           } else {
+              if (total_rows(db_prefix().'clients', array(
+                'leadid' => $lead->id))) {
+                echo '<div class="ribbon success"><span>'._l('lead_is_client').'</span></div>';
+             }
+          }
+      }
+   ?>
+  <div class="row">
+     <div class="col-md-12">
+         <?php if(isset($lead)){
+             echo form_hidden('leadid',$lead->id);
+         } ?>
+   <div class="top-lead-menu">
+      <div class="horizontal-scrollable-tabs preview-tabs-top">
+         <div class="scroller arrow-left"><i class="fa fa-angle-left"></i></div>
+         <div class="scroller arrow-right"><i class="fa fa-angle-right"></i></div>
+         <div class="horizontal-tabs">
+
+      <ul class="nav-tabs-horizontal nav nav-tabs<?php if(!isset($lead)){echo ' lead-new';} ?>" role="tablist">
+         <li role="presentation" class="active" >
+            <a href="#tab_lead_profile" aria-controls="tab_lead_profile" role="tab" data-toggle="tab">
+            <?php echo _l('lead_profile'); ?>
+            </a>
+         </li>
+         <?php if(isset($lead)){ ?>
+         <?php if(count($mail_activity) > 0 || isset($show_email_activity) && $show_email_activity){ ?>
+         <li role="presentation">
+            <a href="#tab_email_activity" aria-controls="tab_email_activity" role="tab" data-toggle="tab">
+                <?php echo hooks()->apply_filters('lead_email_activity_subject', _l('lead_email_activity')); ?>
+            </a>
+         </li>
+         <?php } ?>
+         
+         <li role="presentation">
+                <a href="#tab_lead_profile111" aria-controls="tab_lead_profile111" role="tab" data-toggle="tab">Company Profile
+                </a>
+            </li>
+            
+            <!--<li role="presentation">
+                <a href="#tab_send_product_brochure" aria-controls="tab_send_product_brochure" role="tab" data-toggle="tab">Product Brochure
+                </a>
+            </li>-->
+            
+         <li role="presentation">
+            <a href="#tab_proposals_leads" onclick="initDataTable('.table-proposals-lead', admin_url + 'proposals/proposal_relations/' + <?php echo $lead->id; ?> + '/lead','undefined', 'undefined','undefined',[6,'desc']);" aria-controls="tab_proposals_leads" role="tab" data-toggle="tab">
+            <?php echo _l('proposals'); ?>
+            </a>
+         </li>
+         <li role="presentation">
+            <a href="#tab_tasks_leads" onclick="init_rel_tasks_table(<?php echo $lead->id; ?>,'lead','.table-rel-tasks-leads');" aria-controls="tab_tasks_leads" role="tab" data-toggle="tab">
+            <?php echo _l('tasks'); ?>
+            </a>
+         </li>
+         <li role="presentation">
+            <a href="#attachments" aria-controls="attachments" role="tab" data-toggle="tab">
+            <?php echo _l('lead_attachments'); ?>
+            </a>
+         </li>
+         <li role="presentation">
+            <a href="#lead_reminders" onclick="initDataTable('.table-reminders-leads', admin_url + 'misc/get_reminders/' + <?php echo $lead->id; ?> + '/' + 'lead', undefined, undefined,undefined,[1, 'asc']);" aria-controls="lead_reminders" role="tab" data-toggle="tab">
+            <?php echo _l('leads_reminders_tab'); ?>
+            <?php
+               $total_reminders = total_rows(db_prefix().'reminders',
+                  array(
+                     'isnotified'=>0,
+                     'staff'=>get_staff_user_id(),
+                     'rel_type'=>'lead',
+                     'rel_id'=>$lead->id
+                     )
+                  );
+               if($total_reminders > 0){
+                  echo '<span class="badge">'.$total_reminders.'</span>';
+               }
+               ?>
+            </a>
+         </li>
+         <li role="presentation">
+            <a href="#lead_notes" aria-controls="lead_notes" role="tab" data-toggle="tab">
+            <?php echo _l('lead_add_edit_notes'); ?>
+            </a>
+         </li>
+         <li role="presentation">
+            <a href="#lead_activity" aria-controls="lead_activity" role="tab" data-toggle="tab">
+            <?php echo _l('lead_add_edit_activity'); ?>
+            </a>
+         </li>
+         <?php if(is_gdpr() && (get_option('gdpr_enable_lead_public_form') == '1' || get_option('gdpr_enable_consent_for_leads') == '1')) { ?>
+            <li role="presentation">
+              <a href="#gdpr" aria-controls="gdpr" role="tab" data-toggle="tab">
+                <?php echo _l('gdpr_short'); ?>
+              </a>
+           </li>
+         <?php } ?>
+         <?php } ?>
+      </ul>
+    </div>
+  </div>
+   </div>
+   <!-- Tab panes -->
+   <div class="tab-content mtop20">
+      <!-- from leads modal -->
+      <div role="tabpanel" class="tab-pane active" id="tab_lead_profile">
+         <?php $this->load->view('admin/leads/profile'); ?>
+      </div>
+      
+      
+                <!-- custom code start -->
+            
+            
+<!--=======================  Send GIC Profile ===============================-->  
+
+    <div role="tabpanel" class="tab-pane" id="tab_lead_profile111">
+      <?php echo form_open('admin/emails/company_profile_mail',array('id'=>'lead_form')); ?>
+        <?php 
+            $login_email = get_staff_full_name1();
+            $pos1 = strpos($login_email,"(");
+            $email = substr($login_email,$pos1+1,-1);
+        ?>
+        <div class="col-xs-6 col-sm-6 col-md-6">
+            <label>Email From</label>
+            <div class="form-group">
+                <input type="text" name="email_from" id="email_from" class="form-control input-sm" value="business@erp.earthenconnect.ca" readonly>
+            </div>
+        </div>
+            <input type="hidden" name="lead_id" value="<?php echo $lead->id; ?>">
+        <div class="col-xs-6 col-sm-6 col-md-6">
+            <label>Email To</label>
+            <div class="form-group">
+                <input type="text" name="email_to" id="email_to" class="form-control input-sm" value="<?php echo $lead->email; ?>">
+            </div>
+        </div>
+        <div class="clearfix"></div>
+
+        <div class="col-xs-6 col-sm-6 col-md-6">
+            <label>Subject</label>
+            <div class="form-group">
+                <input type="text" name="Subject" id="Subject" class="form-control input-sm" placeholder="Subject" value="Exclusive Partnership Opportunity for Premium Spices and Honey Products">
+            </div>
+        </div>
+        <div class="col-xs-6 col-sm-6 col-md-6">
+            <label>Cc</label>
+            <div class="form-group">
+                <input type="text" name="cc" id="cc" value="<?php echo $email; ?>" readonly class="form-control input-sm" placeholder="Cc">
+            </div>
+        </div>
+        <div class="clearfix"></div>
+        <div class="col-xs-6 col-sm-6 col-md-6">
+            <label>Bcc</label>
+            <div class="form-group">
+                <input type="text" name="bcc" id="bcc" class="form-control input-sm" value="business@earthenconnect.ca" readonly=""><!-- business@earthenconnect.ca -->
+            </div>
+        </div>
+                  
+        <div class="col-xs-6 col-sm-6 col-md-6">
+            <label>&nbsp;</label>
+            <div class="form-group">
+                <button class="btn btn-warning send" type="submit" id="send">Send Email</button>
+            </div>
+        </div>
+                  
+        <div class="clearfix"></div>
+                  
+        <div class="col-xs-12 col-sm-12 col-md-12">
+            <label><strong>Message Body</strong></label>
+            <br>
+            <!-- <p style="text-align: justify;"><b>Please have a look to our </b><a href="https://support.globalinfocloud.com/uploads/GIC-Company-Profile_6_23.pdf" target="_blank"><b>Company Profile Here</b></a></p>
+            <p>Anticipating for great business together!</p>
+                    
+                    <p>Thanks!</p>
+                    -->
+        <div class="form-group">
+            <?php
+                $body1 = "<p>Dear ".$name.",</p>";
+                $body1 .= "<p>I'm Vaibhav Sinha, representing Earthen Connect Inc., specializing in high quality spices and Honey products.</p><br />";
+                $body1 .= "<p><b>Key Points:</b></p>";
+                $body1 .= "<p><b>Startup Innovation:</b> Agility and fresh perspectives.</p>";
+                $body1 .= "<p><b>Quality Excellence:</b> Premium, Spices and Honey products aligned with consumer demands.</p>";
+                $body1 .= "<p><b>Traceability Through QR Code:</b> Enhanced transparency and trust.</p><br />";
+                
+                $body1 .= "<p><b>Exploring Collaboration:</b></p>";
+                $body1 .= "<p>Eager to discuss distribution opportunities, including white labelling.</p>";
+                $body1 .= "<p>Unique traceability feature meets consumer demands.</p><br />";
+
+                $body1 .= "<p><b>Next Steps:</b></p>";
+                
+                $body1 .= "<p>Propose a meeting at your earliest convenience to explore collaboration details.</p>";
+                $body1 .= "<p>Thank you for considering Earthen Connect Inc. Excited about the potential partnership.</p><br />";
+                $body1 .= "<p>Attached herewith business profile for your easy reference.</p><br /><br />";
+                
+                
+                $body1 .= "<p>Best regards,</p><br />";
+                $body1 .= "<p>Vaibhav Sinha</p>";
+                $body1 .= "<p>Business Head</p>";
+                $body1 .= "<p>Earthen Connect Inc.</p>";
+                $body1 .= "<p>Mobile: +91 9021918932</p>";
+                $body1 .= "<p>Email ID: business@earthenconnect.ca</p>";
+                
+                /*if($email=="vaibhav@earthenconnect.ca") {
+                    $body1.= '<img src="https://support.globalinfocloud.com/uploads/e_sign/vaibhav-sinha.jpeg" style="width: auto; height: 220px;">';
+                }  
+                
+                if($email=="ajinkya.bhalerao@globalinfocloud.com"){
+                $body1.= '<img src="https://support.globalinfocloud.com/uploads/e_sign/ajinkya-bhalerao.jpeg" style="width: auto; height: 220px;">';
+                }*/
+                
+                $body1 .='<p>&nbsp;</p>
+                <p>&nbsp;</p>
+                </p>';
+            ?>
+            <!-- <p text-align="justify" style="color: #018697; text-align: justify;"><strong> CONFIDENTIALITY NOTICE:</strong> The contents of this email message and any attachments are intended solely for the addressee(s) and may contain confidential and/or privileged information and may be legally protected from disclosure. If you are not the intended recipient of this message or their agent, or if this message has been addressed to you in error, please immediately alert the sender by reply email and then delete this message and any attachments. If you are not the intended recipient, you are hereby notified that any use, dissemination, copying, or storage of this message or its attachments is strictly prohibited. -->
+            <textarea name="message" style="display:none;"><?php echo $body1; ?></textarea>
+                <?php echo $body1; ?>
+        </div>
+    </div>
+ 
+        <div class="clearfix"></div>
+            <input type="hidden" name="mobno" id="mobno" value="<?php echo $lead->phonenumber; ?>" class="form-control input-sm">
+                  
+        <?php echo form_close(); ?>
+        
+    </div>  
+    <!-- custom code end -->
+            
+            
+      <?php if(isset($lead)){ ?>
+      <?php if(count($mail_activity) > 0 || isset($show_email_activity) && $show_email_activity){ ?>
+      <div role="tabpanel" class="tab-pane" id="tab_email_activity">
+         <?php hooks()->do_action('before_lead_email_activity', array('lead'=>$lead, 'email_activity'=>$mail_activity)); ?>
+         <?php foreach($mail_activity as $_mail_activity){ ?>
+         <div class="lead-email-activity">
+            <div class="media-left">
+               <i class="fa fa-envelope"></i>
+            </div>
+            <div class="media-body">
+               <h4 class="bold no-margin lead-mail-activity-subject">
+                  <?php echo $_mail_activity['subject']; ?>
+                  <br />
+                  <small class="text-muted display-block mtop5 font-medium-xs"><?php echo _dt($_mail_activity['dateadded']); ?></small>
+               </h4>
+               <div class="lead-mail-activity-body">
+                  <hr />
+                  <?php echo $_mail_activity['body']; ?>
+               </div>
+               <hr />
+            </div>
+         </div>
+         <div class="clearfix"></div>
+         <?php } ?>
+         <?php hooks()->do_action('after_lead_email_activity', array('lead_id'=>$lead->id, 'emails'=>$mail_activity)); ?>
+      </div>
+      <?php } ?>
+      <?php if(is_gdpr() && (get_option('gdpr_enable_lead_public_form') == '1' || get_option('gdpr_enable_consent_for_leads') == '1' || (get_option('gdpr_data_portability_leads') == '1') && is_admin())) { ?>
+      <div role="tabpanel" class="tab-pane" id="gdpr">
+
+          <?php if(get_option('gdpr_enable_lead_public_form') == '1') { ?>
+            <a href="<?php echo $lead->public_url; ?>" target="_blank" class="mtop5">
+                <?php echo _l('view_public_form'); ?>
+            </a>
+          <?php } ?>
+           <?php if(get_option('gdpr_data_portability_leads') == '1' && is_admin()){ ?>
+               <?php
+               if(get_option('gdpr_enable_lead_public_form') == '1') {
+                  echo ' | ';
+               }
+               ?>
+              <a href="<?php echo admin_url('leads/export/'.$lead->id); ?>">
+                 <?php echo _l('dt_button_export'); ?>
+              </a>
+            <?php } ?>
+             <?php if(get_option('gdpr_enable_lead_public_form') == '1' || (get_option('gdpr_data_portability_leads') == '1' && is_admin())) { ?>
+              <hr class="hr-margin-n-15" />
+            <?php } ?>
+          <?php if(get_option('gdpr_enable_consent_for_leads') == '1') { ?>
+            <h4 class="no-mbot">
+                <?php echo _l('gdpr_consent'); ?>
+            </h4>
+          <?php $this->load->view('admin/gdpr/lead_consent'); ?>
+          <hr />
+          <?php } ?>
+      </div>
+      <?php } ?>
+      <div role="tabpanel" class="tab-pane" id="lead_activity">
+         <div class="panel_s no-shadow">
+            <div class="activity-feed">
+               <?php foreach($activity_log as $log){ ?>
+               <div class="feed-item">
+                  <div class="date">
+                    <span class="text-has-action" data-toggle="tooltip" data-title="<?php echo _dt($log['date']); ?>">
+                    <?php echo time_ago($log['date']); ?>
+                  </span>
+                  </div>
+                  <div class="text">
+                     <?php if($log['staffid'] != 0){ ?>
+                     <a href="<?php echo admin_url('profile/'.$log["staffid"]); ?>">
+                     <?php echo staff_profile_image($log['staffid'],array('staff-profile-xs-image pull-left mright5'));
+                        ?>
+                     </a>
+                     <?php
+                        }
+                        $additional_data = '';
+                        if(!empty($log['additional_data'])){
+                         $additional_data = unserialize($log['additional_data']);
+                         echo ($log['staffid'] == 0) ? _l($log['description'],$additional_data) : $log['full_name'] .' - '._l($log['description'],$additional_data);
+                        } else {
+                            echo $log['full_name'] . ' - ';
+                           if($log['custom_activity'] == 0){
+                              echo _l($log['description']);
+                           } else {
+                              echo _l($log['description'],'',false);
+                           }
+                        }
+                        ?>
+                  </div>
+               </div>
+               <?php } ?>
+            </div>
+            <div class="col-md-12">
+               <?php echo render_textarea('lead_activity_textarea','','',array('placeholder'=>_l('enter_activity')),array(),'mtop15'); ?>
+               <div class="text-right">
+                  <button id="lead_enter_activity" class="btn btn-info"><?php echo _l('submit'); ?></button>
+               </div>
+            </div>
+            <div class="clearfix"></div>
+         </div>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="tab_proposals_leads">
+         <?php if(has_permission('proposals','','create')){ ?>
+         <a href="<?php echo admin_url('proposals/proposal?rel_type=lead&rel_id='.$lead->id); ?>" class="btn btn-info mbot25"><?php echo _l('new_proposal'); ?></a>
+         <?php } ?>
+         <?php if(total_rows(db_prefix().'proposals',array('rel_type'=>'lead','rel_id'=>$lead->id))> 0 && (has_permission('proposals','','create') || has_permission('proposals','','edit'))){ ?>
+         <a href="#" class="btn btn-info mbot25" data-toggle="modal" data-target="#sync_data_proposal_data"><?php echo _l('sync_data'); ?></a>
+         <?php $this->load->view('admin/proposals/sync_data',array('related'=>$lead,'rel_id'=>$lead->id,'rel_type'=>'lead')); ?>
+         <?php } ?>
+         <?php
+            $table_data = array(
+             _l('proposal') . ' #',
+             _l('proposal_subject'),
+             _l('proposal_total'),
+             _l('proposal_date'),
+             _l('proposal_open_till'),
+             _l('tags'),
+             _l('proposal_date_created'),
+             _l('proposal_status'));
+            $custom_fields = get_custom_fields('proposal',array('show_on_table'=>1));
+            foreach($custom_fields as $field){
+             array_push($table_data,$field['name']);
+            }
+            $table_data = hooks()->apply_filters('proposals_relation_table_columns', $table_data);
+            render_datatable($table_data,'proposals-lead',[], [
+                'data-last-order-identifier' => 'proposals-relation',
+                'data-default-order'         => get_table_last_order('proposals-relation'),
+            ]);
+            ?>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="tab_tasks_leads">
+         <?php init_relation_tasks_table(array('data-new-rel-id'=>$lead->id,'data-new-rel-type'=>'lead')); ?>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="lead_reminders">
+         <a href="#" data-toggle="modal" class="btn btn-info" data-target=".reminder-modal-lead-<?php echo $lead->id; ?>"><i class="fa fa-bell-o"></i> <?php echo _l('lead_set_reminder_title'); ?></a>
+         <hr />
+         <?php render_datatable(array( _l( 'reminder_description'), _l( 'reminder_date'), _l( 'reminder_staff'), _l( 'reminder_is_notified')), 'reminders-leads'); ?>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="attachments">
+         <?php echo form_open('admin/leads/add_lead_attachment',array('class'=>'dropzone mtop15 mbot15','id'=>'lead-attachment-upload')); ?>
+         <?php echo form_close(); ?>
+         <?php if(get_option('dropbox_app_key') != ''){ ?>
+         <hr />
+         <div class=" pull-left">
+            <?php if (count($lead->attachments) > 0) { ?>
+               <a href="<?php echo admin_url('leads/download_files/'.$lead->id); ?>" class="bold">
+               <?php echo _l('download_all'); ?> (.zip)
+            </a>
+            <?php } ?>
+         </div>
+         <div class="pull-right">
+          <button class="gpicker">
+            <i class="fa fa-google" aria-hidden="true"></i>
+            <?php echo _l('choose_from_google_drive'); ?>
+          </button>
+          <div id="dropbox-chooser-lead"></div>
+        </div>
+        <div class=" clearfix"></div>
+         <?php } ?>
+         <?php if(count($lead->attachments) > 0) { ?>
+         <div class="mtop20" id="lead_attachments">
+            <?php $this->load->view('admin/leads/leads_attachments_template', array('attachments'=>$lead->attachments)); ?>
+         </div>
+         <?php } ?>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="lead_notes">
+         <?php echo form_open(admin_url('leads/add_note/'.$lead->id),array('id'=>'lead-notes')); ?>
+         <div class="form-group">
+                <textarea id="lead_note_description" name="lead_note_description" class="form-control" rows="4"></textarea>
+         </div>
+         <div class="lead-select-date-contacted hide">
+            <?php echo render_datetime_input('custom_contact_date','lead_add_edit_datecontacted','',array('data-date-end-date'=>date('Y-m-d'))); ?>
+         </div>
+         <div class="radio radio-primary">
+            <input type="radio" name="contacted_indicator" id="contacted_indicator_yes" value="yes">
+            <label for="contacted_indicator_yes"><?php echo _l('lead_add_edit_contacted_this_lead'); ?></label>
+         </div>
+         <div class="radio radio-primary">
+            <input type="radio" name="contacted_indicator" id="contacted_indicator_no" value="no" checked>
+            <label for="contacted_indicator_no"><?php echo _l('lead_not_contacted'); ?></label>
+         </div>
+         <button type="submit" class="btn btn-info pull-right"><?php echo _l('lead_add_edit_add_note'); ?></button>
+         <?php echo form_close(); ?>
+         <div class="clearfix"></div>
+         <hr />
+         <div class="panel_s no-shadow">
+            <?php
+               $len = count($notes);
+               $i = 0;
+               foreach($notes as $note){ ?>
+            <div class="media lead-note">
+               <a href="<?php echo admin_url('profile/'.$note["addedfrom"]); ?>" target="_blank">
+               <?php echo staff_profile_image($note['addedfrom'],array('staff-profile-image-small','pull-left mright10')); ?>
+               </a>
+               <div class="media-body">
+                  <?php if($note['addedfrom'] == get_staff_user_id() || is_admin()){ ?>
+                  <a href="#" class="pull-right text-danger" onclick="delete_lead_note(this,<?php echo $note['id']; ?>, <?php echo $lead->id; ?>);return false;"><i class="fa fa fa-times"></i></a>
+                  <a href="#" class="pull-right mright5" onclick="toggle_edit_note(<?php echo $note['id']; ?>);return false;"><i class="fa fa-pencil-square-o"></i></a>
+                  <?php } ?>
+                  <?php if(!empty($note['date_contacted'])){ ?>
+                  <span data-toggle="tooltip" data-title="<?php echo _dt($note['date_contacted']); ?>">
+                  <i class="fa fa-phone-square text-success font-medium valign" aria-hidden="true"></i>
+                  </span>
+                  <?php } ?>
+                  <small><?php echo _l('lead_note_date_added',_dt($note['dateadded'])); ?></small>
+                  <a href="<?php echo admin_url('profile/'.$note["addedfrom"]); ?>" target="_blank">
+                     <h5 class="media-heading bold"><?php echo get_staff_full_name($note['addedfrom']); ?></h5>
+                  </a>
+                  <div data-note-description="<?php echo $note['id']; ?>" class="text-muted">
+                     <?php echo check_for_links(app_happy_text($note['description'])); ?>
+                  </div>
+                  <div data-note-edit-textarea="<?php echo $note['id']; ?>" class="hide mtop15">
+                     <?php echo render_textarea('note','',$note['description']); ?>
+                     <div class="text-right">
+                        <button type="button" class="btn btn-default" onclick="toggle_edit_note(<?php echo $note['id']; ?>);return false;"><?php echo _l('cancel'); ?></button>
+                        <button type="button" class="btn btn-info" onclick="edit_note(<?php echo $note['id']; ?>);"><?php echo _l('update_note'); ?></button>
+                     </div>
+                  </div>
+               </div>
+               <?php if ($i >= 0 && $i != $len - 1) {
+                  echo '<hr />';
+                  }
+                  ?>
+            </div>
+            <?php $i++; } ?>
+         </div>
+      </div>
+      <?php } ?>
+   </div>
+     </div>
+  </div>
+</div>
+<?php hooks()->do_action('lead_modal_profile_bottom',(isset($lead) ? $lead->id : '')); ?>
