@@ -67,7 +67,7 @@
 
 /**
  * Deafult image logo used be the default Header() method.
- * Please set here your own logo or an empty string to disable it.
+                                                                                                                                                                                                                                                                                                                                                                                     * Please set here your own logo or an empty string to disable it.
  */
 //define ('PDF_HEADER_LOGO', '');
 
@@ -91,8 +91,8 @@ define ('K_BLANK_IMAGE', '_blank.png');
  */
 define ('PDF_PAGE_FORMAT', 'A4');
 
-/**
- * Page orientation (P=portrait, L=landscape).
+/**                                                                                                                                                     
+ * Page orientation (P=portrait, L=land                                                                                                                     scape).
  */
 define ('PDF_PAGE_ORIENTATION', 'P');
 
