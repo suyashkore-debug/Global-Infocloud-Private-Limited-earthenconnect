@@ -267,8 +267,8 @@
 										<button type="button" class="btn-tr btn btn-danger" onclick="ResetForm()">Reset</button>
 										<button type="button" class="btn-tr btn btn-primary" data-toggle="modal" data-target="#ListModal">List</button>
 										<button type="button" class="btn-tr btn btn-warning" id="btn-print-pdf" style="display:none;" onclick="printPDF()">
-                                            <i class="fa fa-print"></i> Print PDF
-                                        </button>
+											<i class="fa fa-print"></i> Print PDF
+										</button>
 									</div>
 							
 								</div>

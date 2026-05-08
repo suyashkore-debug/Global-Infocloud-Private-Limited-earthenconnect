@@ -15,12 +15,10 @@
 			$this->db->select('h.AccountID, c.company, c.userid');
 			$this->db->from(db_prefix() . 'history h');
 			$this->db->join(db_prefix() . 'clients c', 'c.AccountID = h.AccountID', 'left');
-			$this->db->where('h.PlantID ='.$this->PlantID);
-			$this->db->where('h.FY ='. $this->FY);
+			$this->db->where('h.PlantID', $this->PlantID);
+			$this->db->where('h.FY', $this->FY);
 			$this->db->where('h.AccountID IS NOT NULL');
-			if (!empty($where)) {
-				$this->db->where($where);
-			}
+			
 			$this->db->group_by('h.AccountID');
 			return $this->db->get()->result();
 		}
@@ -30,12 +28,9 @@
 			$this->db->from(db_prefix() . 'history h');
 			$this->db->join(db_prefix() . 'items i', 'i.item_code = h.ItemID', 'left');
 			$this->db->where('h.ItemID IS NOT NULL');
-			$this->db->where('h.PlantID ='.$this->PlantID);
-			$this->db->where('h.FY ='. $this->FY);
-			if(!empty($where)){
-				$this->db->where($where);
-			}
-			$this->db->group_by('h.ItemID');
+			$this->db->where('h.PlantID', $this->PlantID);
+			$this->db->where('h.FY', $this->FY);
+		
 			return $this->db->get()->result();
 		}
 
@@ -43,8 +38,8 @@
 			$this->db->select('h.batch_no');
 			$this->db->from(db_prefix() . 'history h');
 			$this->db->where('h.batch_no IS NOT NULL');
-			$this->db->where('h.PlantID ='.$this->PlantID);
-			$this->db->where('h.FY ='. $this->FY);
+			$this->db->where('h.PlantID', $this->PlantID);
+			$this->db->where('h.FY', $this->FY);
 			if(!empty($where)){
 				$this->db->where($where);
 			}

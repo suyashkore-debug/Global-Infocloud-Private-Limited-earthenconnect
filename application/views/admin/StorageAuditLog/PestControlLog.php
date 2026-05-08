@@ -213,6 +213,9 @@
 										<button type="submit" class="btn-tr btn btn-info btn-submit" id="btn-update" style="display:none;">Update</button>
 										<button type="button" class="btn-tr btn btn-danger" onclick="ResetForm()">Reset</button>
 										<button type="button" class="btn-tr btn btn-primary" data-toggle="modal" data-target="#ListModal">List</button>
+										<button type="button" class="btn-tr btn btn-warning" id="btn-print-pdf" style="display:none;" onclick="printPDF()">
+											<i class="fa fa-print"></i> Print PDF
+										</button>									
 									</div>
 									
 								</div>
@@ -323,6 +326,18 @@
 <?php init_tail(); ?>
 
 <script type="text/javascript">
+
+
+	function printPDF() {
+		let PestLogID = $('#update_id').val();
+		if (!PestLogID) {
+			alert_float('warning', 'No record selected for print.');
+			return;
+		}
+		let url = '<?= admin_url('StorageAuditLog/PrintPDFPestLogID'); ?>?PestLogID=' + PestLogID;
+		window.open(url, '_blank');
+	}
+
 	$('#Temp,#Humidity').on('keypress',function (event) {
 		if ((event.which != 46 || $(this).val().indexOf('.') != -1) && (event.which < 48 || event.which > 57)) {
 			event.preventDefault();
@@ -339,6 +354,8 @@
 		$('.selectpicker').selectpicker('refresh');
 		$('#btn-save').show();
 		$('#btn-update').hide();
+	    $('#btn-print-pdf').hide();
+
 	}
 
 	$('#PestControlLogForm').on('submit', function(e) {
@@ -412,6 +429,8 @@
 			$('#remark').val(d.Remark);
 			$('#btn-save').hide();
 			$('#btn-update').show();
+		      $('#btn-print-pdf').show();
+
 
 			if (d.details && d.details.length > 0) {
 				d.details.forEach(item => {

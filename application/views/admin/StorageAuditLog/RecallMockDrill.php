@@ -172,6 +172,9 @@
 										<button type="submit" class="btn-tr btn btn-info btn-submit" id="btn-update" style="display:none;">Update</button>
 										<button type="button" class="btn-tr btn btn-danger" onclick="ResetForm()">Reset</button>
 										<button type="button" class="btn-tr btn btn-primary" data-toggle="modal" data-target="#ListModal">List</button>
+										<button type="button" class="btn-tr btn btn-warning" id="btn-print-pdf" style="display:none;" onclick="printPDF()">
+											<i class="fa fa-print"></i> Print PDF
+										</button>
 									</div>
 
 								</div>
@@ -305,6 +308,17 @@
 <?php init_tail(); ?>
 
 <script type="text/javascript">
+
+	function printPDF() {
+			let RecallID = $('#update_id').val();
+			if (!RecallID) {
+				alert_float('warning', 'No record selected for print.');
+				return;
+			}
+			let url = '<?= admin_url('StorageAuditLog/PrintPDFgetRecallMockDrill'); ?>?RecallID=' + RecallID;
+			window.open(url, '_blank');
+		}
+
 	function getBatchByProduct(ProductID) {
 		return $.ajax({
 			url: '<?= admin_url('StorageAuditLog/getBatchByProductOnly'); ?>',
@@ -328,6 +342,8 @@
 		$('.selectpicker').selectpicker('refresh');
 		$('#btn-save').show();
 		$('#btn-update').hide();
+            $('#btn-print-pdf').hide();
+
 	}
 
 	$('#RecallMockDrillForm').on('submit', function(e) {
@@ -409,6 +425,7 @@
 
 			$('#btn-save').hide();
 			$('#btn-update').show();
+			$('#btn-print-pdf').show();
 
 			$('.selectpicker').selectpicker('refresh');
 			$('#ListModal').modal('hide');

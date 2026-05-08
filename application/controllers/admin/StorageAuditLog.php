@@ -186,12 +186,14 @@ class StorageAuditLog extends AdminController
 
 	public function getProductsBySupplier(){
 		$SupplierID = $this->input->post('SupplierID');
-		$AccountID = $this->curl_model->getRow('tblclients', 'AccountID', ['userid' => $SupplierID])->AccountID ?? '';
+		$supplier = $this->curl_model->getRow('tblclients', 'AccountID', ['userid' => $SupplierID]);
+		$AccountID = $supplier ? $supplier->AccountID : '';
 		if(empty($AccountID)){
 			echo json_encode(['status' => false, 'message' => 'Invalid Supplier ID.']);
 			die;
 		}
-		$ProductList = $this->history_model->getDistinctItemsFromHistory("h.TType='P' AND TType2='Order' AND h.AccountID = '$AccountID'");
+		$where = "h.TType='P' AND TType2='Order' AND h.AccountID = " . $this->db->escape($AccountID);
+		$ProductList = $this->history_model->getDistinctItemsFromHistory($where);
 		echo json_encode(['status' => true, 'message' => 'Products fetched successfully.', 'data' => $ProductList]);
 		die;
 	}
@@ -1137,7 +1139,7 @@ class StorageAuditLog extends AdminController
             die;
         }
     
-        $log          = $this->curl_model->getRow('tbl_daily_storage_log', '*', ['LogID' => $LogID]);
+        $log          = $this->curl_model->getRowpdf('tbl_daily_storage_log', '*', ['LogID' => $LogID]);
         $log->details = $this->curl_model->getResult('tbl_daily_storage_log_details', '*', ['LogID' => $LogID]);
         $log->rootcompany = $this->curl_model->getrootcompany('tblrootcompany');
         // echo"<pre>";print_r($log);exit();
@@ -1168,5 +1170,276 @@ class StorageAuditLog extends AdminController
     
         // Fixed: was using undefined $OrderID
         $pdf->Output(mb_strtoupper(slug_it('storage-audit-log-' . $LogID)) . '.pdf', $type);
+    }
+
+
+     public function PrintPDFSanitationChecklist()
+    {
+        $SanitationID = $this->input->get('SanitationID');
+        if (empty($SanitationID)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid Sanitation ID.']);
+            die;
+        }
+    
+        $log = $this->curl_model->getRowpdf('tbl_weekly_sanitation', '*', ['SanitationID' => $SanitationID]);
+         $log->details = $this->curl_model->getResult('tbl_weekly_sanitation_details', '*', ['SanitationID' => $SanitationID]);
+         $log->rootcompany = $this->curl_model->getrootcompany('tblrootcompany');
+      //   echo"<pre>";print_r($log);exit();
+
+    
+        $invoice = [
+            'invoice' => $log,
+        ];
+    
+        try {
+            $pdf = SanitationChecklist_pdf($invoice);
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            echo $message;
+            if (strpos($message, 'Unable to get the size of the image') !== false) {
+                show_pdf_unable_to_get_image_size_error();
+            }
+            die;
+        }
+    
+        $type = 'I';
+        if ($this->input->get('output_type')) {
+            $type = $this->input->get('output_type');
+        }
+        if ($this->input->get('print')) {
+            $type = 'I';
+        }
+    
+        // Fixed: was using undefined $OrderID
+        $pdf->Output(mb_strtoupper(slug_it('SanitationChecklist' . $SanitationID)) . '.pdf', $type);
+    }
+
+
+      public function PrintPDFPestLogID()
+    {
+        $PestLogID = $this->input->get('PestLogID');
+        if (empty($PestLogID)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid Pest Log ID.']);
+            die;
+        }
+    
+	  
+        $log = $this->curl_model->getRowpdf('tbl_pest_control_log', '*', ['PestLogID' => $PestLogID]);
+         $log->details = $this->curl_model->getResult('tbl_pest_control_log_details', '*', ['PestLogID' => $PestLogID]);
+         $log->rootcompany = $this->curl_model->getrootcompany('tblrootcompany');
+      //   echo"<pre>";print_r($log);exit();
+
+    
+        $invoice = [
+            'invoice' => $log,
+        ];
+    
+        try {
+            $pdf = PestLogID_pdf($invoice);
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            echo $message;
+            if (strpos($message, 'Unable to get the size of the image') !== false) {
+                show_pdf_unable_to_get_image_size_error();
+            }
+            die;
+        }
+    
+        $type = 'I';
+        if ($this->input->get('output_type')) {
+            $type = $this->input->get('output_type');
+        }
+        if ($this->input->get('print')) {
+            $type = 'I';
+        }
+    
+        // Fixed: was using undefined $OrderID
+        $pdf->Output(mb_strtoupper(slug_it('PestLogID' . $PestLogID)) . '.pdf', $type);
+    }
+
+      public function PrintPDFgetNonConformanceActionLog()
+    {
+        $PestLogID = $this->input->get('PestLogID');
+        if (empty($PestLogID)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid Pest Log ID.']);
+            die;
+        }
+    
+
+	
+	  
+        $log = $this->curl_model->getRowpdf('tbl_non_conformance_log', '*', ['NCID' => $PestLogID]);
+         $log->details = $this->curl_model->getResult('tbl_nc_log_types', '*', ['NCID' => $PestLogID]);
+         $log->rootcompany = $this->curl_model->getrootcompany('tblrootcompany');
+      //   echo"<pre>";print_r($log);exit();
+
+    
+        $invoice = [
+            'invoice' => $log,
+        ];
+    
+        try {
+            $pdf = NonConformanceActionLog_pdf($invoice);
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            echo $message;
+            if (strpos($message, 'Unable to get the size of the image') !== false) {
+                show_pdf_unable_to_get_image_size_error();
+            }
+            die;
+        }
+    
+        $type = 'I';
+        if ($this->input->get('output_type')) {
+            $type = $this->input->get('output_type');
+        }
+        if ($this->input->get('print')) {
+            $type = 'I';
+        }
+    
+        // Fixed: was using undefined $OrderID
+        $pdf->Output(mb_strtoupper(slug_it('NonConformanceActionLog' . $PestLogID)) . '.pdf', $type);
+    }
+
+       public function PrintPDFgetMonthlyInspectionChecklist()
+    {
+        $InspectionID = $this->input->get('InspectionID');
+        if (empty($InspectionID)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid Inspection ID.']);
+            die;
+        }
+    
+
+	
+	  
+         $log= $this->curl_model->getRowpdf('tbl_monthly_inspection', '*', ['InspectionID' => $InspectionID]);
+         $log->rootcompany = $this->curl_model->getrootcompany('tblrootcompany');
+      //   echo"<pre>";print_r($log);exit();
+
+    
+        $invoice = [
+            'invoice' => $log,
+        ];
+    
+        try {
+            $pdf = MonthlyInspectionChecklist_pdf($invoice);
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            echo $message;
+            if (strpos($message, 'Unable to get the size of the image') !== false) {
+                show_pdf_unable_to_get_image_size_error();
+            }
+            die;
+        }
+    
+        $type = 'I';
+        if ($this->input->get('output_type')) {
+            $type = $this->input->get('output_type');
+        }
+        if ($this->input->get('print')) {
+            $type = 'I';
+        }
+    
+        // Fixed: was using undefined $OrderID
+        $pdf->Output(mb_strtoupper(slug_it('MonthlyInspectionChecklist' . $InspectionID)) . '.pdf', $type);
+    }
+
+
+
+      public function PrintPDFgetRecallMockDrill()
+    {
+        $RecallID = $this->input->get('RecallID');
+        if (empty($RecallID)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid Recall ID.']);
+            die;
+        }
+    
+
+	
+	  
+	$log = $this->curl_model->getRowpdf('tbl_recall_mock_drill','*',['RecallID' => $RecallID]);
+	$log->rootcompany = $this->curl_model->getrootcompany('tblrootcompany');
+	$log->product = $this->curl_model->getRow('tblitems','*',['id' => $log->ProductID]);
+
+	$ItemID = $log->product->item_code ?? '';
+
+	if (empty($ItemID)) {
+		echo json_encode(['status' => false,'message' => 'Invalid Product ID.']);
+		die;
+		}
+
+	/* Batch List batch_no */
+	$log->BatchList = $this->history_model->getDistinctBatchesFromHistory("h.TType='P' AND TType2='Order' AND h.ItemID = '$ItemID'");
+
+
+        $invoice = [
+            'invoice' => $log,
+        ];
+    
+        try {
+            $pdf = RecallMockDrill_pdf($invoice);
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            echo $message;
+            if (strpos($message, 'Unable to get the size of the image') !== false) {
+                show_pdf_unable_to_get_image_size_error();
+            }
+            die;
+        }
+    
+        $type = 'I';
+        if ($this->input->get('output_type')) {
+            $type = $this->input->get('output_type');
+        }
+        if ($this->input->get('print')) {
+            $type = 'I';
+        }
+    
+        // Fixed: was using undefined $OrderID
+        $pdf->Output(mb_strtoupper(slug_it('RecallMockDrill' . $RecallID)) . '.pdf', $type);
+    }
+
+     public function PrintPDFInspectionChecklist()
+    {
+        $InspectionID = $this->input->get('InspectionID');
+        if (empty($InspectionID)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid Inspection ID.']);
+            die;
+        }
+
+	
+  
+	$log = $this->curl_model->getRowpdf('tbl_receiving_inspection','*',['InspectionID' => $InspectionID]);
+	$log->rootcompany = $this->curl_model->getrootcompany('tblrootcompany');
+	$log->product = $this->curl_model->getRow('tbl_receiving_inspection_details','*',['InspectionID' => $InspectionID]);
+	$log->product1 = $this->curl_model->getRIC(['fromDate' => date('Y-m-01'), 'toDate' => date('Y-m-d'),'WarehouseID'=> $log->WarehouseID], 500, 0)['rows'] ?? [];
+
+// echo"<pre>";print_r($log);exit();
+
+        $invoice = [
+            'invoice' => $log,
+        ];
+    
+        try {
+            $pdf = InspectionChecklist_pdf($invoice);
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            echo $message;
+            if (strpos($message, 'Unable to get the size of the image') !== false) {
+                show_pdf_unable_to_get_image_size_error();
+            }
+            die;
+        }
+    
+        $type = 'I';
+        if ($this->input->get('output_type')) {
+            $type = $this->input->get('output_type');
+        }
+        if ($this->input->get('print')) {
+            $type = 'I';
+        }
+    
+        // Fixed: was using undefined $OrderID
+        $pdf->Output(mb_strtoupper(slug_it('RecallMockDrill' . $InspectionID)) . '.pdf', $type);
     }
 }

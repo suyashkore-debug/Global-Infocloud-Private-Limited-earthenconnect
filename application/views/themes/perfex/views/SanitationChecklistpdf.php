@@ -8,11 +8,6 @@ $pdf->Ln(0);
 $rootcom    = isset($log->rootcompany['data'][0]) ? $log->rootcompany['data'][0] : [];
 $detailsArr = isset($log->details) && is_array($log->details) ? $log->details : [];
 
-$params = [];
-foreach ($detailsArr as $item) {
-    $params[$item->ParameterName] = $item;
-}
-
 $rc = function($key) use ($rootcom) {
     return isset($rootcom[$key]) ? $rootcom[$key] : '';
 };
@@ -27,54 +22,50 @@ if (file_exists($logoPath)) {
 }
 
 // ── Date / Location ───────────────────────────────────────────────────────────
-$transDate  = isset($log->TransDate) ? date('d/m/Y', strtotime($log->TransDate)) : '';
-$locationID = (isset($log->LocationID) && $log->LocationID != 0) ? $log->LocationID : '-';
+$weekStartDate = isset($log->WeekStartDate) ? date('d/m/Y', strtotime($log->WeekStartDate)) : '';
+$locationID    = (isset($log->LocationID) && $log->LocationID != 0) ? $log->LocationID : '-';
 
-// ── Parameter Rows Build ──────────────────────────────────────────────────────
-$rows = [
-    ['Temperature (°C)', 'Temp',      '10–25 °C'],
-    ['Humidity (%)',      'Humidity',  '< 60%'],
-    ['Pest Activity',     'Pest',      'None'],
-    ['Cleanliness',       'Clean',     'Clean'],
-    ['Packaging',         'Packaging', 'Intact'],
+// ── Detail Rows Build ─────────────────────────────────────────────────────────
+$detailRows = '';
+$count      = 0;
+$notOkList  = [];
+
+$areaDisplayNames = [
+    'Floor'   => 'Floor',
+    'Pallets' => 'Pallets',
+    'Rack'    => 'Storage Rack/Shelves',
+    'Walls'   => 'Walls (visible area)',
+    'Entry'   => 'Entry / Door Area',
 ];
 
-$paramRows = '';
-$count     = 0;
-$notOkList = [];
-
-foreach ($rows as [$label, $paramName, $range]) {
-    $item    = $params[$paramName] ?? null;
-    $reading = $item->ReadingValue ?? '';
-
-    if ($paramName === 'Pest') {
-        $reading = ($reading === 'Y') ? 'Yes' : (($reading === 'N') ? 'No' : $reading);
-    } elseif ($paramName === 'Clean') {
-        $reading = ($reading === 'Y') ? 'Good' : (($reading === 'N') ? 'Poor' : $reading);
-    } elseif ($paramName === 'Packaging') {
-        $reading = ($reading === 'Y') ? 'Intact' : (($reading === 'N') ? 'Damaged' : $reading);
-    }
+foreach ($detailsArr as $item) {
+    $areaKey   = $item->AreaName ?? '';
+    $areaLabel = isset($areaDisplayNames[$areaKey]) ? $areaDisplayNames[$areaKey] : htmlspecialchars($areaKey);
 
     $statusRaw   = $item->Status ?? '';
+    // ✓ fix: Ok = tick, Not Ok = X
     $status      = ($statusRaw === 'Y') ? 'Ok' : (($statusRaw === 'N') ? 'Not Ok' : '');
     $statusColor = ($statusRaw === 'N') ? '#cc0000' : '#007700';
 
-    $action  = htmlspecialchars($item->ActionTaken ?? '');
-    $initial = htmlspecialchars($item->Initials   ?? '');
-    $bg      = (++$count % 2 === 0) ? '#f0f0f0' : '#ffffff';
+    $cleaningAgent = htmlspecialchars($item->CleaningAgent ?? '');
+    $issuesFound   = htmlspecialchars($item->IssuesFound   ?? '');
+    $actionTaken   = htmlspecialchars($item->ActionTaken   ?? '');
+    $initials      = htmlspecialchars($item->Initials      ?? '');
+
+    $bg = (++$count % 2 === 0) ? '#f0f0f0' : '#ffffff';
 
     if ($statusRaw === 'N') {
-        $notOkList[] = $label;
+        $notOkList[] = $areaLabel;
     }
 
-    $paramRows .= "
+    $detailRows .= "
     <tr bgcolor=\"{$bg}\">
-        <td width=\"22%\" style=\"border:1px solid #999999; padding:4px 5px; height:20px; font-weight:bold;\" align=\"center\" valign=\"middle\">{$label}</td>
-        <td width=\"12%\" style=\"border:1px solid #999999; padding:4px 5px; height:20px;\" align=\"center\" valign=\"middle\">{$reading}</td>
-        <td width=\"18%\" style=\"border:1px solid #999999; padding:4px 5px; height:20px;\" align=\"center\" valign=\"middle\">{$range}</td>
-        <td width=\"12%\" style=\"border:1px solid #999999; padding:4px 5px; height:20px; color:{$statusColor}; font-weight:bold;\" align=\"center\" valign=\"middle\">{$status}</td>
-        <td width=\"24%\" style=\"border:1px solid #999999; padding:4px 5px; height:20px;\" align=\"center\" valign=\"middle\">{$action}</td>
-        <td width=\"12%\" style=\"border:1px solid #999999; padding:4px 5px; height:20px;\" align=\"center\" valign=\"middle\">{$initial}</td>
+        <td width=\"18%\" style=\"border:1px solid #999999; padding:4px 5px; height:22px; font-weight:bold;\" align=\"center\" valign=\"middle\">{$areaLabel}</td>
+        <td width=\"10%\" style=\"border:1px solid #999999; padding:4px 5px; height:22px; color:{$statusColor}; font-weight:bold;\" align=\"center\" valign=\"middle\">{$status}</td>
+        <td width=\"22%\" style=\"border:1px solid #999999; padding:4px 5px; height:22px;\" align=\"center\" valign=\"middle\">{$cleaningAgent}</td>
+        <td width=\"22%\" style=\"border:1px solid #999999; padding:4px 5px; height:22px;\" align=\"center\" valign=\"middle\">{$issuesFound}</td>
+        <td width=\"20%\" style=\"border:1px solid #999999; padding:4px 5px; height:22px;\" align=\"center\" valign=\"middle\">{$actionTaken}</td>
+        <td width=\"8%\"  style=\"border:1px solid #999999; padding:4px 5px; height:22px;\" align=\"center\" valign=\"middle\">{$initials}</td>
     </tr>";
 }
 
@@ -82,14 +73,14 @@ foreach ($rows as [$label, $paramName, $range]) {
 $notOkCount   = count($notOkList);
 $summaryColor = $notOkCount > 0 ? '#cc0000' : '#007700';
 $summaryText  = $notOkCount > 0
-    ? 'WARNING: ' . $notOkCount . ' parameter(s) out of range — ' . implode(', ', $notOkList) . '. Corrective action required.'
-    : 'All parameters are within acceptable range.';
+    ? 'WARNING: ' . $notOkCount . ' area(s) not cleaned properly — ' . implode(', ', $notOkList) . '. Corrective action required.'
+    : 'All areas are cleaned and within acceptable standards.';
 
 // ── Full HTML ─────────────────────────────────────────────────────────────────
 $html = '
 <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size:11px;">
 
-    <!-- ===== HEADER: Logo LEFT + Company CENTER ===== -->
+    <!-- ===== HEADER ===== -->
     <tr>
         <td colspan="6" style="border:1px solid #000000; padding:5px;" valign="middle">
             <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -100,7 +91,7 @@ $html = '
                     <td width="70%" align="center" valign="middle">
                         <span style="font-size:15px; font-weight:bold;">' . htmlspecialchars($rc('company_name')) . '</span><br/>
                         <span style="font-size:10px;">' . htmlspecialchars($rc('address')) . ', ' . htmlspecialchars($rc('city')) . ' - ' . htmlspecialchars($rc('pincode')) . ', ' . htmlspecialchars($rc('state')) . '</span><br/>
-                        <span style="font-size:10px;"><span style="font-weight:bold;">GSTIN:</span> ' . htmlspecialchars($rc('gst')) . ' &nbsp;|&nbsp; <span style="font-weight:bold;">Contact:</span> ' . htmlspecialchars($rc('mobile1')) . ' / ' . htmlspecialchars($rc('mobile2')) . '</span><br/>
+                        <span style="font-size:10px;"><span style="font-weight:bold;">GSTIN:</span> ' . htmlspecialchars($rc('gst')) . ' &nbsp;|&nbsp; <span style="font-weight:bold;">Contact:</span> ' . htmlspecialchars($rc('mobile1')) . ' / ' . htmlspecialchars($rc('mobile2')) . '</span>
                     </td>
                     <td width="15%" valign="middle"></td>
                 </tr>
@@ -111,16 +102,16 @@ $html = '
     <!-- ===== TITLE ===== -->
     <tr bgcolor="#50607b">
         <td colspan="6" align="center" valign="middle" style="border:1px solid #000000; padding:0px; font-size:13px; color:#ffffff; height:26px; font-weight:bold;">
-            Daily Storage Monitoring Log
+            Weekly Sanitation Checklist
         </td>
     </tr>
 
     <!-- ===== LOG INFO ===== -->
     <tr>
-        <td width="16%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px; background-color:#e8ecf0; font-weight:bold;">Log ID</td>
-        <td width="34%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px;">' . htmlspecialchars($log->LogID ?? '') . '</td>
-        <td width="16%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px; background-color:#e8ecf0; font-weight:bold;">Date</td>
-        <td width="34%" align="center" valign="middle" colspan="3" style="border:1px solid #000000; padding:5px; height:20px;">' . $transDate . '</td>
+        <td width="16%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px; background-color:#e8ecf0; font-weight:bold;">Sanitation ID</td>
+        <td width="34%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px;">' . htmlspecialchars($log->SanitationID ?? '') . '</td>
+        <td width="16%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px; background-color:#e8ecf0; font-weight:bold;">Week Starting Date</td>
+        <td width="34%" align="center" valign="middle" colspan="3" style="border:1px solid #000000; padding:5px; height:20px;">' . $weekStartDate . '</td>
     </tr>
     <tr>
         <td width="16%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px; background-color:#e8ecf0; font-weight:bold;">Warehouse</td>
@@ -128,23 +119,20 @@ $html = '
         <td width="16%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px; background-color:#e8ecf0; font-weight:bold;">Location</td>
         <td width="34%" align="center" valign="middle" colspan="3" style="border:1px solid #000000; padding:5px; height:20px;">' . $locationID . '</td>
     </tr>
-    <tr>
-        <td width="16%" align="center" valign="middle" style="border:1px solid #000000; padding:5px; height:20px; background-color:#e8ecf0; font-weight:bold;">Remark</td>
-        <td align="center" valign="middle" colspan="5" style="border:1px solid #000000; padding:5px; height:20px;">' . htmlspecialchars($log->Remark ?? '') . '</td>
-    </tr>
+
 
     <!-- ===== TABLE HEADER ===== -->
     <tr bgcolor="#50607b">
-        <td style="border:1px solid #000000; padding:5px; width:22%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Parameter</td>
-        <td style="border:1px solid #000000; padding:5px; width:12%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Reading</td>
-        <td style="border:1px solid #000000; padding:5px; width:18%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Acceptable Range</td>
-        <td style="border:1px solid #000000; padding:5px; width:12%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">OK / Not OK</td>
-        <td style="border:1px solid #000000; padding:5px; width:24%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Action Taken</td>
-        <td style="border:1px solid #000000; padding:5px; width:12%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Initials</td>
+        <td style="border:1px solid #000000; padding:5px; width:18%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Area</td>
+        <td style="border:1px solid #000000; padding:5px; width:10%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Cleaned</td>
+        <td style="border:1px solid #000000; padding:5px; width:22%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Cleaning Agent Used</td>
+        <td style="border:1px solid #000000; padding:5px; width:22%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Issues Found</td>
+        <td style="border:1px solid #000000; padding:5px; width:20%; color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Action Taken</td>
+        <td style="border:1px solid #000000; padding:5px; width:8%;  color:#ffffff; height:22px; font-weight:bold;" align="center" valign="middle">Initials</td>
     </tr>
 
-    <!-- ===== PARAMETER ROWS ===== -->
-    ' . $paramRows . '
+    <!-- ===== DETAIL ROWS ===== -->
+    ' . $detailRows . '
 
     <!-- ===== SUMMARY ===== -->
     <tr>
@@ -154,7 +142,7 @@ $html = '
     </tr>
 
     <!-- ===== SIGNATURE ===== -->
-    <tr style="height:100px;">
+     <tr style="height:100px;">
         <td colspan="3" style="border:1px solid #000000; padding:10px; font-weight:bold;" align="left" height="29px" valign="bottom">
             Prepared By :
         </td>

@@ -275,6 +275,68 @@ function StorageAuditLog_pdf($statement)
 {
     return app_pdf('invoice', LIBSPATH . 'pdf/StorageAuditLog_pdf', $statement);
 }
+
+/**
+ * Prepare SanitationChecklist_pdf pdf
+ * @param  object $statement statement
+ * @return mixed
+ */
+function SanitationChecklist_pdf($statement)
+{
+    return app_pdf('invoice', LIBSPATH . 'pdf/SanitationChecklist_pdf', $statement);
+}
+
+/**
+ * Prepare PestLogID_pdf pdf
+ * @param  object $statement statement
+ * @return mixed
+ */
+function PestLogID_pdf($statement)
+{
+    return app_pdf('invoice', LIBSPATH . 'pdf/PestLogID_pdf', $statement);
+}
+
+/**
+ * Prepare NonConformanceActionLog_pdf pdf
+ * @param  object $statement statement
+ * @return mixed
+ */
+function NonConformanceActionLog_pdf($statement)
+{
+    return app_pdf('invoice', LIBSPATH . 'pdf/NonConformanceActionLog_pdf', $statement);
+}
+
+/**
+ * Prepare MonthlyInspectionChecklist_pdf pdf
+ * @param  object $statement statement
+ * @return mixed
+ */
+function MonthlyInspectionChecklist_pdf($statement)
+{
+    return app_pdf('invoice', LIBSPATH . 'pdf/MonthlyInspectionChecklist_pdf', $statement);
+}
+
+/**
+ * Prepare RecallMockDrill_pdf pdf
+ * @param  object $statement statement
+ * @return mixed
+ */
+function RecallMockDrill_pdf($statement)
+{
+    return app_pdf('invoice', LIBSPATH . 'pdf/RecallMockDrill_pdf', $statement);
+}
+
+/**
+ * Prepare InspectionChecklist_pdf pdf
+ * @param  object $statement statement
+ * @return mixed
+ */
+function InspectionChecklist_pdf($statement)
+{
+    return app_pdf('invoice', LIBSPATH . 'pdf/InspectionChecklist_pdf', $statement);
+}
+
+
 /**
  * General function for PDF documents logic
  * @param  string $type   document type e.q. payment, statement, invoice
